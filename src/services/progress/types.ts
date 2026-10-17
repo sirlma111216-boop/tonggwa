@@ -13,7 +13,8 @@ export interface AnswerRecord {
 }
 
 export interface UnitProgress {
-  stages: Partial<Record<StageKey, { status: StageStatus; updatedAt: string }>>;
+  /** step: 마지막으로 보던 화면 번호(0부터) */
+  stages: Partial<Record<StageKey, { status: StageStatus; step?: number; updatedAt: string }>>;
   answers: Record<string, AnswerRecord>;
   note?: string;
   noteUpdatedAt?: string;
@@ -25,6 +26,7 @@ export interface UnitProgress {
 export interface LastPosition {
   unitId: string;
   stageKey: StageKey;
+  step?: number;
   semester: 1 | 2;
   at: string;
 }

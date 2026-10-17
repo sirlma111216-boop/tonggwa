@@ -49,10 +49,14 @@ export interface Manifest {
   stats: { standards: number; units: number; questions: number; kiceQuestions: number; images: number };
 }
 
-export type StageItem = { type: 'md'; md: string } | { type: 'question'; id: string };
+/** 한 화면에 해당하는 학습 단위 */
+export type Step =
+  | { type: 'concept'; title: string; md: string; part?: number; parts?: number }
+  | { type: 'remediation'; title: string; md: string; part?: number; parts?: number }
+  | { type: 'question'; id: string };
 
 export interface Stage extends StageMeta {
-  items: StageItem[];
+  steps: Step[];
   questionIds: string[];
 }
 

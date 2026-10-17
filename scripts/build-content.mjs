@@ -157,6 +157,66 @@ function parseAnswers(body, fullIds) {
   return { answers: out, notes: rewriteImages(notes.join('\n\n')) };
 }
 
+// 한 화면 = 한 스텝. 읽기 단계는 #### 소제목마다 한 카드, 소제목이 길면 몇 문단씩 나눈다(내용은 모두 보존).
+// 평가 단계는 문항 하나가 한 카드, 앞뒤 설명(막혔다면 …)은 별도 카드.
+const MAX_BLOCKS = { concept: 4, advanced: 4, strategy: 1, prerequisite: 3, concept_check: 3, advanced_check: 3, exam_check: 3 };
+
+function chunkBlocks(bs, max) {
+  const out = [];
+  for (let i = 0; i < bs.length; i += max) out.push(bs.slice(i, i + max));
+  return out;
+}
+
+function toSteps(items, st) {
+  const steps = [];
+  const max = MAX_BLOCKS[st.key] ?? 4;
+  for (const it of items) {
+    if (it.type === 'question') {
+      steps.push({ type: 'question', id: it.id });
+      continue;
+    }
+    const isRemed = it.md.startsWith('**막혔다면');
+    // #### 소제목 단위로 나눈다
+    const sections = [];
+    let cur = { title: null, blocks: [] };
+    for (const b of blocks(it.md)) {
+      const h = b.match(/^#### (.+)$/m);
+      if (h && b.startsWith('#### ')) {
+        if (cur.blocks.length || cur.title) sections.push(cur);
+        const rest = b.replace(/^#### .+\n?/, '').trim();
+        cur = { title: h[1].trim(), blocks: rest ? [rest] : [] };
+      } else cur.blocks.push(b);
+    }
+    if (cur.blocks.length || cur.title) sections.push(cur);
+    for (const sec of sections) {
+      const parts = chunkBlocks(sec.blocks, max);
+      parts.forEach((p, i) => {
+        let title = isRemed ? '막혔다면 여기부터 읽어요' : sec.title ?? null;
+        let md = p.join('\n\n');
+        let fromLabel = false;
+        if (!title) {
+          // 소제목이 없으면 첫 문단의 굵은 표제(예: **왜 묻는가?**)를 카드 제목으로 쓴다
+          const lab = md.match(/^\*\*([^*\n]{2,40}?)\*\*\s*/);
+          if (lab) {
+            title = lab[1].replace(/[:：]$/, '').trim();
+            md = md.slice(lab[0].length);
+            fromLabel = true;
+          } else title = st.label;
+        }
+        const numbered = parts.length > 1 && !fromLabel;
+        steps.push({
+          type: isRemed ? 'remediation' : 'concept',
+          title,
+          part: numbered ? i + 1 : undefined,
+          parts: numbered ? parts.length : undefined,
+          md,
+        });
+      });
+    }
+  }
+  return steps;
+}
+
 function parseChapter(cfg, index, prereqIndex) {
   const md = read(path.join(SRC, cfg.file));
   const titleLine = md.split('\n').find((l) => l.startsWith('# '));
@@ -186,7 +246,7 @@ function parseChapter(cfg, index, prereqIndex) {
       if (!s) throw new Error(`${cfg.file} ${code}: 단계 누락 ${st.heading}`);
       const parsed = parseStage(s.body);
       Object.assign(questions, parsed.questions);
-      stages.push({ key: st.key, label: st.label, kind: st.kind, items: parsed.items, questionIds: Object.keys(parsed.questions) });
+      stages.push({ key: st.key, label: st.label, kind: st.kind, steps: toSteps(parsed.items, st), questionIds: Object.keys(parsed.questions) });
     }
     const ansSec = sub.sections.find((x) => x.heading === '정답과 해설');
     if (!ansSec) throw new Error(`${cfg.file} ${code}: 정답과 해설 누락`);

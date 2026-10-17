@@ -1,39 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { findUnitInManifest, loadAnswers, loadManifest, loadUnit, orderedUnits } from '../../content/loader';
 import type { AnswerSet, Manifest, Stage, StageKey, Unit } from '../../content/types';
-import { useAuthUser } from '../../services/auth';
 import { progress, unitStageStatus, useProgress } from '../../services/progress/store';
 import type { AnswerRecord } from '../../services/progress/types';
 import { HelpPanel } from './HelpPanel';
 import { Markdown } from './Markdown';
-import { QuestionBlock } from './QuestionBlock';
+import { QuestionStep } from './QuestionStep';
 
-type Draft = Record<string, number | string>;
+const STAGE_DESC: Record<StageKey, string> = {
+  prerequisite: '이 단원에 필요한 중학교 개념을 짧게 확인해요',
+  concept: '핵심 개념을 한 화면씩 읽어요',
+  concept_check: '방금 배운 개념을 문제로 확인해요',
+  advanced: '자료 해석과 여러 개념의 연결을 더 깊게 봐요',
+  advanced_check: '심화 내용을 문제로 확인해요',
+  strategy: '수능형 문항을 어떻게 읽고 푸는지 전략을 익혀요',
+  exam_check: '수능형 문항으로 마무리해요',
+};
 
-const draftKey = (uid: string, unitId: string, stage: string) => `tonggwa.draft.${uid}.${unitId}.${stage}`;
-
-function loadDraft(key: string): Draft {
-  try {
-    return JSON.parse(localStorage.getItem(key) ?? '{}') as Draft;
-  } catch {
-    return {};
-  }
-}
-
-export function LearnPage() {
-  const { unitId = '', stageKey } = useParams();
-  const navigate = useNavigate();
-  const user = useAuthUser();
-  const state = useProgress();
+function useUnitData(unitId: string) {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [unit, setUnit] = useState<Unit | null>(null);
-  const [answers, setAnswers] = useState<AnswerSet | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     setUnit(null);
-    setAnswers(null);
     setError(null);
     Promise.all([loadManifest(), loadUnit(unitId)])
       .then(([m, u]) => {
@@ -42,202 +32,295 @@ export function LearnPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, [unitId]);
+  return { manifest, unit, error };
+}
 
-  const stage: Stage | null = useMemo(() => unit?.stages.find((s) => s.key === stageKey) ?? null, [unit, stageKey]);
-  const stageKeys = useMemo(() => unit?.stages.map((s) => s.key) ?? [], [unit]);
-  const up = state?.units[unitId];
-
-  // 현재 위치 저장
-  useEffect(() => {
-    if (unit && stage) progress.setPosition({ unitId: unit.id, stageKey: stage.key, semester: unit.semester });
-  }, [unit, stage]);
-
-  // 제출된 평가 단계라면 정답·해설을 불러온다
-  const submitted = !!(stage && stage.kind === 'check' && stage.questionIds.length > 0 && stage.questionIds.every((id) => up?.answers[id]));
-  useEffect(() => {
-    if (submitted && !answers) loadAnswers(unitId).then(setAnswers).catch((e) => setError(String(e)));
-  }, [submitted, answers, unitId]);
-
-  // 작성 중 답안 (기기 보관)
-  const dKey = user && stage ? draftKey(user.uid, unitId, stage.key) : '';
-  const [draft, setDraft] = useState<Draft>({});
-  useEffect(() => {
-    setDraft(dKey ? loadDraft(dKey) : {});
-  }, [dKey]);
-  const setDraftValue = (qid: string, v: number | string) => {
-    setDraft((d) => {
-      const next = { ...d, [qid]: v };
-      if (dKey) localStorage.setItem(dKey, JSON.stringify(next));
-      return next;
-    });
-  };
-
+export function LearnPage() {
+  const { unitId = '', stageKey } = useParams();
+  const { manifest, unit, error } = useUnitData(unitId);
   if (error) return <div className="page"><div className="notice notice-bad">{error}</div></div>;
   if (!unit || !manifest) return <div className="center-msg">단원을 불러오는 중이에요…</div>;
-  if (!stageKey) {
-    const resume = stageKeys.find((k) => unitStageStatus(up, k) !== 'done') ?? stageKeys[0];
-    return <Navigate to={`/learn/${unitId}/${resume}`} replace />;
-  }
+  if (!stageKey) return <UnitMap unit={unit} manifest={manifest} />;
   if (stageKey === 'done') return <UnitDone unit={unit} manifest={manifest} />;
+  const stage = unit.stages.find((s) => s.key === stageKey);
   if (!stage) return <Navigate to={`/learn/${unitId}`} replace />;
+  return <StagePlayer key={stage.key} unit={unit} stage={stage} manifest={manifest} />;
+}
 
-  const idx = stageKeys.indexOf(stage.key);
-  const prev = idx > 0 ? stageKeys[idx - 1] : null;
-  const next = idx < stageKeys.length - 1 ? stageKeys[idx + 1] : null;
-  const doneCount = stageKeys.filter((k) => unitStageStatus(up, k) === 'done').length;
+/* ---------------- 단원 지도: 7단계를 경로로 보여 준다 ---------------- */
+function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
+  const state = useProgress();
+  const up = state?.units[unit.id];
   const loc = findUnitInManifest(manifest, unit.id);
-
-  const answeredCount = stage.questionIds.filter((id) => {
-    const v = draft[id];
-    return typeof v === 'number' || (typeof v === 'string' && v.trim().length > 0);
-  }).length;
-
-  async function submit() {
-    if (!stage || !unit) return;
-    const ans = await loadAnswers(unit.id);
-    setAnswers(ans);
-    const now = new Date().toISOString();
-    const records: Record<string, AnswerRecord> = {};
-    for (const id of stage.questionIds) {
-      const q = unit.questions[id];
-      const v = draft[id];
-      const a = ans[id];
-      if (q.kind === 'choice') {
-        const chosen = typeof v === 'number' ? v : -1;
-        records[id] = { value: chosen, submittedAt: now, correct: a?.choiceIndex !== undefined ? chosen === a.choiceIndex : null };
-      } else {
-        records[id] = { value: typeof v === 'string' ? v : '', submittedAt: now, correct: null };
-      }
-    }
-    progress.recordAnswers(unit.id, records);
-    progress.setStageStatus(unit.id, stage.key, 'done', stageKeys);
-    if (dKey) localStorage.removeItem(dKey);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function goNext() {
-    if (!stage || !unit) return;
-    if (stage.kind === 'read') progress.setStageStatus(unit.id, stage.key, 'done', stageKeys);
-    navigate(next ? `/learn/${unit.id}/${next}` : `/learn/${unit.id}/done`);
-    window.scrollTo({ top: 0 });
-  }
-
-  let qIndex = 0;
+  const firstOpen = unit.stages.find((s) => unitStageStatus(up, s.key) !== 'done') ?? unit.stages[0];
+  const doneCount = unit.stages.filter((s) => unitStageStatus(up, s.key) === 'done').length;
   return (
-    <>
-      <div className="learn-head">
-        <p className="crumbs">
-          <Link to="/">시작</Link> › <Link to={`/start/units/${unit.semester}`}>{loc?.semester.title ?? `${unit.semester}학기`}</Link> › <span>{unit.chapter.title}</span>
-        </p>
-        <div className="learn-title">
-          <h1>{unit.title}</h1>
-          <span className="badge">{unit.code}</span>
-          {unit.extra && <span className="badge badge-warn">보충 묶음</span>}
-        </div>
-        {unit.goal && <p className="learn-goal"><strong>도달 목표</strong> · {unit.goal}</p>}
+    <div className="page page-narrow">
+      <p className="crumbs">
+        <Link to="/">시작</Link> › <Link to={`/start/units/${unit.semester}`}>{loc?.semester.title ?? `${unit.semester}학기`}</Link> › <span>{unit.chapter.title}</span>
+      </p>
+      <div className="learn-title">
+        <h1>{unit.title}</h1>
+        <span className="badge">{unit.code}</span>
       </div>
-      <div className="narrow-banner notice notice-warn" style={{ marginTop: 12 }}>
-        이 학습 화면은 노트북·데스크톱·가로 태블릿(1024px 이상)에 맞춰져 있어요. 좁은 화면에서는 입력이 가려질 수 있으니 넓은 화면을 권장해요.
+      {unit.goal && <p className="learn-goal"><strong>도달 목표</strong> · {unit.goal}</p>}
+      <div className="row" style={{ margin: '16px 0 22px' }}>
+        <Link className="btn btn-primary btn-lg" to={`/learn/${unit.id}/${firstOpen.key}`}>
+          {doneCount === 0 ? '학습 시작' : doneCount === unit.stages.length ? '처음부터 다시 보기' : `이어서: ${firstOpen.label}`} →
+        </Link>
+        <span className="muted">{doneCount}/{unit.stages.length} 단계 완료</span>
       </div>
-      <div className="learn">
-        <nav className="rail" aria-label="학습 단계">
-          <ol>
-            {unit.stages.map((s, i) => {
-              const st = unitStageStatus(up, s.key);
-              return (
-                <li key={s.key}>
-                  <Link to={`/learn/${unit.id}/${s.key}`} className={s.key === stage.key ? 'current' : ''} aria-current={s.key === stage.key ? 'step' : undefined}>
-                    <span className={`dot ${st}`}>{st === 'done' ? '✓' : i + 1}</span>
-                    <span>{s.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
-          <div className="rail-progress">완료 {doneCount}/{stageKeys.length} 단계</div>
-        </nav>
-
-        <section className="center">
-          <div className="stage-card">
-            <div className="stage-kicker">
-              <span>{idx + 1}단계 · {stage.kind === 'check' ? '평가' : '읽기'}</span>
-              {submitted && <span className="badge badge-done">제출 완료</span>}
-            </div>
-            <h2 className="stage-title">{stage.label}</h2>
-
-            {stage.kind === 'check' && !submitted && (
-              <div className="notice notice-info" style={{ marginBottom: 16 }}>
-                정답과 해설은 모든 문항을 제출한 뒤에 열려요. 선택형은 자동으로 채점하고, 서술형은 정답 기준과 비교해 스스로 점검해요.
-              </div>
-            )}
-
-            {stage.items.map((it, i) => {
-              if (it.type === 'md') {
-                const isRemediation = it.md.startsWith('**막혔다면');
-                return isRemediation ? (
-                  <div key={i} className="notice notice-ok" style={{ marginTop: 18, fontSize: 'inherit' }}>
-                    <Markdown md={it.md} />
-                  </div>
-                ) : (
-                  <Markdown key={i} md={it.md} />
-                );
-              }
-              qIndex += 1;
-              const q = unit.questions[it.id];
-              return (
-                <QuestionBlock
-                  key={it.id}
-                  question={q}
-                  index={qIndex}
-                  draft={draft[it.id]}
-                  onChange={(v) => setDraftValue(it.id, v)}
-                  record={up?.answers[it.id]}
-                  answer={answers?.[it.id]}
-                  onSelfMark={(m) => progress.setSelfMark(unit.id, it.id, m)}
-                />
-              );
-            })}
-
-            {submitted && unit.answerNotes && stage.key === 'exam_check' && (
-              <div className="notice notice-info" style={{ marginTop: 18, fontSize: 'inherit' }}>
-                <Markdown md={unit.answerNotes} />
-              </div>
-            )}
-
-            <div className="stage-footer">
-              <div>
-                {prev ? (
-                  <Link className="btn" to={`/learn/${unit.id}/${prev}`}>← 이전 단계</Link>
-                ) : (
-                  <Link className="btn" to={`/start/units/${unit.semester}`}>← 단원 목록</Link>
-                )}
-              </div>
-              {stage.kind === 'check' && !submitted ? (
-                <div className="row">
-                  <span className="hint">{answeredCount}/{stage.questionIds.length} 문항 응답</span>
-                  <button className="btn btn-primary" disabled={answeredCount < stage.questionIds.length} onClick={submit}>
-                    제출하고 해설 보기
-                  </button>
-                </div>
-              ) : (
-                <button className="btn btn-primary" onClick={goNext}>
-                  {next ? '다음 단계 →' : '단원 마치기 →'}
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <HelpPanel unit={unit} />
-      </div>
-    </>
+      <ol className="path">
+        {unit.stages.map((s, i) => {
+          const st = unitStageStatus(up, s.key);
+          const qn = s.questionIds.length;
+          const correct = s.questionIds.filter((id) => up?.answers[id]?.correct === true).length;
+          const choiceN = s.questionIds.filter((id) => unit.questions[id].kind === 'choice').length;
+          return (
+            <li key={s.key} className={`path-node ${st}`}>
+              <Link to={`/learn/${unit.id}/${s.key}`} className="path-card">
+                <span className={`dot ${st}`}>{st === 'done' ? '✓' : i + 1}</span>
+                <span className="path-main">
+                  <span className="path-title">{s.label}</span>
+                  <span className="path-desc">{STAGE_DESC[s.key]}</span>
+                </span>
+                <span className="path-meta">
+                  {s.kind === 'check' ? `${qn}문항${st === 'done' && choiceN ? ` · 선택형 ${correct}/${choiceN} 정답` : ''}` : `${s.steps.length}화면`}
+                  <br />
+                  <span className={`badge ${st === 'done' ? 'badge-done' : st === 'in_progress' ? 'badge-progress' : ''}`}>
+                    {st === 'done' ? '완료' : st === 'in_progress' ? '진행 중' : '미학습'}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
+/* ---------------- 스텝 플레이어: 한 화면에 하나씩 ---------------- */
+function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; manifest: Manifest }) {
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const state = useProgress();
+  const up = state?.units[unit.id];
+  const [answers, setAnswers] = useState<AnswerSet | null>(null);
+  const [help, setHelp] = useState(false);
+  const [anim, setAnim] = useState(0);
+  const qApi = useRef<{ canCheck: boolean; check: () => void } | null>(null);
+
+  const total = stage.steps.length; // 마지막에 요약 화면이 하나 더 붙는다
+  const stageKeys = useMemo(() => unit.stages.map((s) => s.key), [unit]);
+  const stageIdx = stageKeys.indexOf(stage.key);
+  const nextStage = stageIdx + 1 < stageKeys.length ? stageKeys[stageIdx + 1] : null;
+
+  // 시작 위치: ?s= 가 있으면 그것, 없으면 저장된 위치
+  const initial = (() => {
+    const q = params.get('s');
+    if (q !== null) return Math.min(Math.max(Number(q) || 0, 0), total);
+    const saved = up?.stages[stage.key];
+    if (saved?.status === 'done') return 0;
+    return Math.min(saved?.step ?? 0, total);
+  })();
+  const [idx, setIdx] = useState(initial);
+
+  useEffect(() => {
+    progress.setPosition({ unitId: unit.id, stageKey: stage.key, step: idx, semester: unit.semester });
+    setParams({ s: String(idx) }, { replace: true });
+    window.scrollTo({ top: 0 });
+  }, [idx, unit.id, unit.semester, stage.key, setParams]);
+
+  const step = idx < total ? stage.steps[idx] : null;
+  const q = step?.type === 'question' ? unit.questions[step.id] : null;
+  const record = q ? up?.answers[q.id] : undefined;
+
+  useEffect(() => {
+    if (record && !answers) loadAnswers(unit.id).then(setAnswers);
+  }, [record, answers, unit.id]);
+
+  const go = useCallback(
+    (n: number) => {
+      setAnim((a) => a + 1);
+      setIdx(Math.min(Math.max(n, 0), total));
+    },
+    [total],
+  );
+
+  const checkAnswer = async (value: number | string) => {
+    if (!q) return;
+    const ans = await loadAnswers(unit.id);
+    setAnswers(ans);
+    const a = ans[q.id];
+    const rec: AnswerRecord = {
+      value,
+      submittedAt: new Date().toISOString(),
+      correct: q.kind === 'choice' && a?.choiceIndex !== undefined ? value === a.choiceIndex : null,
+    };
+    progress.recordAnswers(unit.id, { [q.id]: rec });
+  };
+
+  const finishStage = () => {
+    progress.setStageStatus(unit.id, stage.key, 'done', stageKeys);
+  };
+  useEffect(() => {
+    if (idx === total) finishStage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, total]);
+
+  // 주 행동
+  const needSelfMark = !!(q && record && record.correct === null && !record.selfMark);
+  const primary = (() => {
+    if (idx === total) return { label: nextStage ? '다음 단계로 →' : '단원 마치기 →', disabled: false, run: () => navigate(nextStage ? `/learn/${unit.id}/${nextStage}` : `/learn/${unit.id}/done`) };
+    if (q && !record) return { label: '확인', disabled: !(qApi.current?.canCheck ?? false), run: () => qApi.current?.check() };
+    if (q && record) return { label: idx + 1 === total ? '결과 보기 →' : '다음 →', disabled: needSelfMark, run: () => go(idx + 1) };
+    return { label: idx + 1 === total ? '정리하기 →' : '다음 →', disabled: false, run: () => go(idx + 1) };
+  })();
+
+  // Enter 키 = 주 행동
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      const t = e.target as HTMLElement;
+      if (t?.tagName === 'TEXTAREA' && !(e.ctrlKey || e.metaKey)) return;
+      if (t?.tagName === 'BUTTON' || t?.tagName === 'A') return;
+      if (!primary.disabled) {
+        e.preventDefault();
+        primary.run();
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [primary]);
+
+  const [, force] = useState(0);
+  const bind = useCallback((api: { canCheck: boolean; check: () => void }) => {
+    const changed = qApi.current?.canCheck !== api.canCheck;
+    qApi.current = api;
+    if (changed) force((n) => n + 1);
+  }, []);
+
+  const qNumber = step?.type === 'question' ? stage.questionIds.indexOf(step.id) + 1 : 0;
+  const pct = Math.round((Math.min(idx, total) / total) * 100);
+
+  return (
+    <div className="lesson">
+      <header className="lesson-top">
+        <Link to={`/learn/${unit.id}`} className="btn btn-text lesson-exit" title="단원 지도로 나가기">✕ 나가기</Link>
+        <div className="lesson-where">
+          <span className="lesson-unit">{unit.title}</span>
+          <span className="lesson-stage">{stageIdx + 1}단계 · {stage.label}</span>
+        </div>
+        <div className="lesson-progress" aria-label={`진행 ${pct}%`}>
+          <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+          <span className="small muted">{Math.min(idx + 1, total)}/{total}</span>
+        </div>
+        <button className={`btn btn-text${help ? ' on' : ''}`} onClick={() => setHelp((h) => !h)} aria-expanded={help}>도움 · 노트</button>
+      </header>
+
+      <div className={`lesson-body${help ? ' with-help' : ''}`}>
+        <div className="lesson-card" key={anim}>
+          {step && step.type !== 'question' && (
+            <article className={`step-read${step.type === 'remediation' ? ' step-remed' : ''}`}>
+              <div className="step-kicker">
+                <span className="badge">{step.type === 'remediation' ? '보충 설명' : `${stage.label} · ${idx + 1}/${total}`}</span>
+                {step.part && <span className="muted small">{step.part}/{step.parts}</span>}
+              </div>
+              <h2 className="step-title">{step.title}</h2>
+              <Markdown md={step.md} />
+            </article>
+          )}
+          {step && step.type === 'question' && q && (
+            <QuestionStep
+              key={q.id}
+              question={q}
+              number={qNumber}
+              total={stage.questionIds.length}
+              record={record}
+              answer={answers?.[q.id]}
+              onCheck={checkAnswer}
+              onSelfMark={(m) => progress.setSelfMark(unit.id, q.id, m)}
+              bind={bind}
+            />
+          )}
+          {idx === total && <StageSummary unit={unit} stage={stage} nextStage={nextStage} manifest={manifest} />}
+        </div>
+        {help && (
+          <div className="lesson-help">
+            <HelpPanel unit={unit} />
+          </div>
+        )}
+      </div>
+
+      <footer className="lesson-actions">
+        <button className="btn" onClick={() => go(idx - 1)} disabled={idx === 0}>← 이전</button>
+        <span className="hint muted small">
+          {q && !record && (q.kind === 'choice' ? '번호를 고르고 확인을 누르세요 (키보드 1~5, Enter)' : '답을 쓰고 확인을 누르세요 (Ctrl+Enter)')}
+          {needSelfMark && '위에서 내 답을 어떻게 썼는지 표시하면 다음으로 갈 수 있어요'}
+        </span>
+        <button className="btn btn-primary btn-lg" disabled={primary.disabled} onClick={primary.run}>{primary.label}</button>
+      </footer>
+    </div>
+  );
+}
+
+/* ---------------- 단계 요약 ---------------- */
+function StageSummary({ unit, stage, nextStage, manifest }: { unit: Unit; stage: Stage; nextStage: StageKey | null; manifest: Manifest }) {
+  const state = useProgress();
+  const up = state?.units[unit.id];
+  const ids = stage.questionIds;
+  const choice = ids.filter((id) => unit.questions[id].kind === 'choice');
+  const correct = choice.filter((id) => up?.answers[id]?.correct === true);
+  const wrong = choice.filter((id) => up?.answers[id]?.correct === false);
+  const shorts = ids.filter((id) => unit.questions[id].kind === 'short');
+  const review = shorts.filter((id) => up?.answers[id]?.selfMark && up.answers[id].selfMark !== 'ok');
+  const nextLabel = nextStage ? manifest.stageOrder.find((s) => s.key === nextStage)?.label : null;
+  return (
+    <div className="summary">
+      <div className="step-kicker"><span className="badge badge-done">단계 완료</span></div>
+      <h2 className="step-title">{stage.label} 단계를 마쳤어요</h2>
+      {stage.kind === 'read' ? (
+        <p className="prose">{stage.steps.length}개 화면의 설명을 모두 읽었어요. {nextLabel ? `다음은 ${nextLabel}이에요.` : ''}</p>
+      ) : (
+        <>
+          <div className="summary-grid">
+            {choice.length > 0 && (
+              <div className="card">
+                <div className="muted small">선택형</div>
+                <div className="summary-num">{correct.length}<span>/{choice.length}</span></div>
+              </div>
+            )}
+            {shorts.length > 0 && (
+              <div className="card">
+                <div className="muted small">서술형 · 맞게 썼어요</div>
+                <div className="summary-num">{shorts.filter((id) => up?.answers[id]?.selfMark === 'ok').length}<span>/{shorts.length}</span></div>
+              </div>
+            )}
+          </div>
+          {wrong.length + review.length > 0 ? (
+            <div className="notice notice-warn" style={{ marginTop: 16 }}>
+              다시 볼 문항: {[...wrong, ...review].join(', ')}. 해설의 ‘돌아갈 개념’ 안내를 따라 설명으로 돌아가고, 같은 문제를 정답을 본 뒤 다시 맞히는 것은 새로운 이해의 증거로 세지 않아요.
+            </div>
+          ) : (
+            <div className="notice notice-ok" style={{ marginTop: 16 }}>모든 문항을 잘 마쳤어요. {nextLabel ? `다음은 ${nextLabel}이에요.` : ''}</div>
+          )}
+        </>
+      )}
+      {!nextStage && unit.answerNotes && (
+        <div className="notice notice-info" style={{ marginTop: 16, fontSize: 'inherit' }}>
+          <Markdown md={unit.answerNotes} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- 단원 마침 ---------------- */
 function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
   const state = useProgress();
   const up = state?.units[unit.id];
-  const keys = unit.stages.map((s) => s.key as StageKey);
+  const keys = unit.stages.map((s) => s.key);
   const done = keys.filter((k) => unitStageStatus(up, k) === 'done').length;
   const all = orderedUnits(manifest);
   const i = all.findIndex((u) => u.id === unit.id);
@@ -254,21 +337,12 @@ function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
       <h1>{unit.title}</h1>
       <div className="card stack">
         <div className={`notice ${done === keys.length ? 'notice-ok' : 'notice-warn'}`}>
-          {done === keys.length ? '일곱 단계를 모두 마쳤어요.' : `${keys.length}단계 중 ${done}단계를 마쳤어요. 남은 단계는 왼쪽 단계 목록에서 열 수 있어요.`}
+          {done === keys.length ? '일곱 단계를 모두 마쳤어요.' : `${keys.length}단계 중 ${done}단계를 마쳤어요. 남은 단계는 단원 지도에서 열 수 있어요.`}
         </div>
-        <div className="grid-2">
-          <div>
-            <h3>선택형</h3>
-            <p className="muted" style={{ margin: 0 }}>{choiceTotal ? `${choiceCorrect}/${choiceTotal} 정답` : '없음'}</p>
-          </div>
-          <div>
-            <h3>서술형 자기 점검</h3>
-            <p className="muted" style={{ margin: 0 }}>{shortTotal ? `${shortOk}/${shortTotal} ‘맞게 썼어요’` : '없음'}</p>
-          </div>
+        <div className="summary-grid">
+          <div className="card"><div className="muted small">선택형</div><div className="summary-num">{choiceCorrect}<span>/{choiceTotal}</span></div></div>
+          <div className="card"><div className="muted small">서술형 · 맞게 썼어요</div><div className="summary-num">{shortOk}<span>/{shortTotal}</span></div></div>
         </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          틀린 문항은 해설의 ‘돌아갈 개념’ 안내를 따라 설명으로 돌아가요. 같은 문제를 정답을 본 뒤 다시 맞히는 것은 새로운 이해의 증거로 세지 않아요. 간격을 둔 재확인(복습 일정)은 Firebase 연결 후 서버에서 관리해요.
-        </p>
         {unit.chapterOutro && (
           <div className="notice notice-info" style={{ fontSize: 'inherit' }}>
             <Markdown md={unit.chapterOutro} />
@@ -276,11 +350,11 @@ function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
         )}
         <div className="row">
           {nextUnit ? (
-            <Link className="btn btn-primary" to={`/learn/${nextUnit.id}`}>다음 단원: {nextUnit.title} →</Link>
+            <Link className="btn btn-primary btn-lg" to={`/learn/${nextUnit.id}`}>다음 단원: {nextUnit.title} →</Link>
           ) : (
-            <Link className="btn btn-primary" to="/exams">평가원 공식 예시로 가기 →</Link>
+            <Link className="btn btn-primary btn-lg" to="/exams">평가원 공식 예시로 가기 →</Link>
           )}
-          <Link className="btn" to={`/learn/${unit.id}/prerequisite`}>이 단원 다시 보기</Link>
+          <Link className="btn" to={`/learn/${unit.id}`}>단원 지도</Link>
           <Link className="btn" to={`/start/units/${unit.semester}`}>단원 목록</Link>
         </div>
       </div>

@@ -76,17 +76,20 @@ class ProgressStore {
 
   setPosition(pos: Omit<LastPosition, 'at'>) {
     this.mutate((s) => {
-      s.lastPosition = { ...pos, at: new Date().toISOString() };
+      const at = new Date().toISOString();
+      s.lastPosition = { ...pos, at };
       const u = this.ensureUnit(s, pos.unitId);
       const st = u.stages[pos.stageKey];
-      if (!st || st.status === 'not_started') u.stages[pos.stageKey] = { status: 'in_progress', updatedAt: s.lastPosition.at };
+      if (!st || st.status === 'not_started') u.stages[pos.stageKey] = { status: 'in_progress', step: pos.step ?? 0, updatedAt: at };
+      else if (st.status !== 'done') u.stages[pos.stageKey] = { ...st, step: pos.step ?? st.step, updatedAt: at };
+      else u.stages[pos.stageKey] = { ...st, step: pos.step ?? st.step };
     });
   }
 
   setStageStatus(unitId: string, stageKey: StageKey, status: StageStatus, allStages: StageKey[]) {
     this.mutate((s) => {
       const u = this.ensureUnit(s, unitId);
-      u.stages[stageKey] = { status, updatedAt: new Date().toISOString() };
+      u.stages[stageKey] = { ...u.stages[stageKey], status, updatedAt: new Date().toISOString() };
       const allDone = allStages.every((k) => u.stages[k]?.status === 'done');
       if (allDone && !u.completedAt) u.completedAt = new Date().toISOString();
     });
