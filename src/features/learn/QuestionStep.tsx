@@ -3,7 +3,6 @@ import type { Answer, Question } from '../../content/types';
 import type { AnswerRecord } from '../../services/progress/types';
 import { Markdown } from './Markdown';
 
-const CIRCLED = ['①', '②', '③', '④', '⑤'];
 
 interface Props {
   question: Question;
