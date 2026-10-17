@@ -70,7 +70,7 @@ export function QuestionStep({ question, number, total, record, answer, onCheck,
                 <label className={cls}>
                   <input type="radio" name={question.id} checked={selected} disabled={checked} onChange={() => setChoice(i)} />
                   <span>
-                    <span className="circ">{CIRCLED[i]}</span> {c}
+                    <span className="circ">{i + 1}</span> {c}
                   </span>
                 </label>
               </li>

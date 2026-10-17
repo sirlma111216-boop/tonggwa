@@ -324,3 +324,19 @@ label.field { display: block; font-weight: 600; margin-bottom: 6px; }
   .lesson-card { padding: 24px 20px 28px; }
   .step-remed { margin: -24px -20px -28px; padding: 24px 20px 28px; }
 }
+
+/* ---------- 2차 다듬기 ---------- */
+.lesson-mode .lesson { min-height: 100vh; }
+.lesson-mode .lesson-top { top: 0; }
+.lesson-mode .lesson-help { top: 96px; }
+.lesson-body { align-items: start; align-content: start; }
+.lesson-card { min-height: 320px; }
+/* 선지: 라디오 원 대신 번호 배지만 보이게 */
+.choices label { position: relative; grid-template-columns: 36px 1fr; align-items: center; }
+.choices input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.choices .circ { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-strong); background: #fff; font-size: 15px; color: var(--muted); }
+.choices label > span:last-child { display: contents; }
+.choices label.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.choices label.selected .circ, .choices label.correct .circ { background: var(--accent); border-color: var(--accent); color: #fff; }
+.choices label.wrong .circ { background: var(--bad-text); border-color: var(--bad-text); color: #fff; }
+.choices label:has(input:focus-visible) { outline: 3px solid #8fd1c1; outline-offset: 2px; }

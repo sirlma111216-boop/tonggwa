@@ -159,6 +159,8 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
       correct: q.kind === 'choice' && a?.choiceIndex !== undefined ? value === a.choiceIndex : null,
     };
     progress.recordAnswers(unit.id, { [q.id]: rec });
+    // 해설이 화면 아래에 가려지지 않도록 피드백 위치로 스크롤
+    window.setTimeout(() => document.querySelector('.feedback')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
   };
 
   const finishStage = () => {
@@ -178,21 +180,24 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
     return { label: idx + 1 === total ? '정리하기 →' : '다음 →', disabled: false, run: () => go(idx + 1) };
   })();
 
-  // Enter 키 = 주 행동
+  // Enter 키 = 주 행동 (항상 최신 primary 를 참조)
+  const primaryRef = useRef(primary);
+  primaryRef.current = primary;
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' || e.isComposing) return;
       const t = e.target as HTMLElement;
       if (t?.tagName === 'TEXTAREA' && !(e.ctrlKey || e.metaKey)) return;
       if (t?.tagName === 'BUTTON' || t?.tagName === 'A') return;
-      if (!primary.disabled) {
+      const p = primaryRef.current;
+      if (!p.disabled) {
         e.preventDefault();
-        primary.run();
+        p.run();
       }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [primary]);
+  }, []);
 
   const [, force] = useState(0);
   const bind = useCallback((api: { canCheck: boolean; check: () => void }) => {

@@ -167,7 +167,7 @@ function chunkBlocks(bs, max) {
   return out;
 }
 
-function toSteps(items, st) {
+function toSteps(items, st, unitTitle) {
   const steps = [];
   const max = MAX_BLOCKS[st.key] ?? 4;
   for (const it of items) {
@@ -194,14 +194,16 @@ function toSteps(items, st) {
         let title = isRemed ? '막혔다면 여기부터 읽어요' : sec.title ?? null;
         let md = p.join('\n\n');
         let fromLabel = false;
+        if (isRemed) md = md.replace(/^\*\*막혔다면 여기부터 읽어요\.?\*\*\s*/, '');
         if (!title) {
-          // 소제목이 없으면 첫 문단의 굵은 표제(예: **왜 묻는가?**)를 카드 제목으로 쓴다
-          const lab = md.match(/^\*\*([^*\n]{2,40}?)\*\*\s*/);
+          // 소제목이 없으면 첫 문단의 굵은 표제(예: **왜 묻는가?**, **처음 볼 것:**)를 카드 제목으로 쓴다.
+          // 표제는 문장부호로 끝나거나 뒤에 공백이 와야 한다. "**감염병의 진단**은 …"처럼 조사가 바로 붙으면 본문의 강조이므로 떼지 않는다.
+          const lab = md.match(/^\*\*([^*\n]{2,40}?)\*\*(?=\s|$)/);
           if (lab) {
             title = lab[1].replace(/[:：]$/, '').trim();
             md = md.slice(lab[0].length);
             fromLabel = true;
-          } else title = st.label;
+          } else title = unitTitle ?? st.label;
         }
         const numbered = parts.length > 1 && !fromLabel;
         steps.push({
@@ -233,7 +235,10 @@ function parseChapter(cfg, index, prereqIndex) {
     const codeM = sec.heading.match(/\[(10통과\d-\d\d-\d\d)\]\s*$/);
     if (!codeM) throw new Error(`${cfg.file}: 성취기준 코드 없는 ## 제목: ${sec.heading}`);
     const code = codeM[1];
-    const title = sec.heading.replace(/\s*\[10통과[^\]]+\]\s*$/, '').trim();
+    const rawTitle = sec.heading.replace(/\s*\[10통과[^\]]+\]\s*$/, '').trim();
+    const noM = rawTitle.match(/^(\d\d)\s+(.+)$/);
+    const title = noM ? noM[2] : rawTitle;
+    const no = noM ? Number(noM[1]) : null;
     const idxUnit = index.units.find((u) => u.standard === code && u.source_file === cfg.file);
     if (!idxUnit) throw new Error(`${cfg.file}: 색인에 없는 단원 ${code}`);
     const sub = splitSections(sec.body, 3);
@@ -246,7 +251,7 @@ function parseChapter(cfg, index, prereqIndex) {
       if (!s) throw new Error(`${cfg.file} ${code}: 단계 누락 ${st.heading}`);
       const parsed = parseStage(s.body);
       Object.assign(questions, parsed.questions);
-      stages.push({ key: st.key, label: st.label, kind: st.kind, steps: toSteps(parsed.items, st), questionIds: Object.keys(parsed.questions) });
+      stages.push({ key: st.key, label: st.label, kind: st.kind, steps: toSteps(parsed.items, st, title), questionIds: Object.keys(parsed.questions) });
     }
     const ansSec = sub.sections.find((x) => x.heading === '정답과 해설');
     if (!ansSec) throw new Error(`${cfg.file} ${code}: 정답과 해설 누락`);
@@ -268,6 +273,7 @@ function parseChapter(cfg, index, prereqIndex) {
     units.push({
       id: idxUnit.id,
       code,
+      no,
       title,
       goal,
       chapter: { id: cfg.chapter, title: chapterTitle },
@@ -383,7 +389,7 @@ function main() {
         if (allIds.has(id)) throw new Error(`중복 문항 ID ${id}`);
         allIds.add(id);
       }
-      units.push({ id: u.id, code: u.code, title: u.title, goal: u.goal, questionCount: qc, extra: u.extra, stageCount: u.stages.length });
+      units.push({ id: u.id, code: u.code, no: u.no, title: u.title, goal: u.goal, questionCount: qc, extra: u.extra, stageCount: u.stages.length });
     }
     manifestChapters.push({ id: ch.id, title: ch.title, semester: ch.semester, extra: ch.extra, intro: ch.intro, units });
   }

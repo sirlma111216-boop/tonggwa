@@ -18,6 +18,8 @@ export interface StageMeta {
 export interface ManifestUnit {
   id: string;
   code: string;
+  /** 영역 안에서의 소단원 번호 (보충 묶음은 null) */
+  no: number | null;
   title: string;
   goal: string;
   questionCount: number;
@@ -71,6 +73,7 @@ export interface Question {
 export interface Unit {
   id: string;
   code: string;
+  no: number | null;
   title: string;
   goal: string;
   chapter: { id: string; title: string };

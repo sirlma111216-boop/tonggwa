@@ -17,7 +17,6 @@ export function UnitsPage() {
   const sem = manifest.semesters.find((s) => s.id === semId)!;
   const stageKeys = manifest.stageOrder.map((s) => s.key);
 
-  let counter = 0;
   return (
     <div className="page page-narrow">
       <p className="crumbs"><Link to="/">시작</Link> › <Link to="/start/semester">학기 선택</Link> › {sem.title}</p>
@@ -30,8 +29,7 @@ export function UnitsPage() {
             {c.extra && <span className="badge" style={{ marginLeft: 10 }}>보충 묶음 · 운동량과 충격량 도판 풀이</span>}
           </h2>
           <ul className="unit-list">
-            {c.units.map((u) => {
-              counter += 1;
+            {c.units.map((u, i) => {
               const up = state?.units[u.id];
               const sum = unitSummary(up, stageKeys);
               // 이어서 할 단계: 첫 미완료 단계
@@ -39,7 +37,7 @@ export function UnitsPage() {
               return (
                 <li key={u.id}>
                   <Link to={`/learn/${u.id}/${resume}`} className="unit-row">
-                    <span className="num">{String(counter).padStart(2, '0')}</span>
+                    <span className="num">{String(u.no ?? i + 1).padStart(2, '0')}</span>
                     <span>
                       <div className="title">{u.title}</div>
                       <div className="goal">{u.goal}</div>

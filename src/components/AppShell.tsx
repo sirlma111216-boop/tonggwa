@@ -1,13 +1,23 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { auth, useAuthUser } from '../services/auth';
 import { progress, useProgress } from '../services/progress/store';
 
 export function AppShell() {
   const user = useAuthUser();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   useProgress(); // 저장 상태 변화를 다시 그리기 위해 구독
   const status = progress.saveStatus;
   const saveText = status === 'saving' ? '저장 중…' : status === 'error' ? '저장 실패' : progress.backendLabel;
+  // 학습(스텝 플레이어) 중에는 상단 메뉴를 숨겨 집중한다. 나가기는 플레이어 상단에 있다.
+  const inLesson = /^\/learn\/[^/]+\/(?!done$)[^/]+/.test(pathname);
+  if (inLesson) {
+    return (
+      <main className="lesson-mode">
+        <Outlet />
+      </main>
+    );
+  }
 
   return (
     <>
