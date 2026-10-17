@@ -1,0 +1,45 @@
+import type { StageKey } from '../../content/types';
+
+export type StageStatus = 'not_started' | 'in_progress' | 'done';
+
+export interface AnswerRecord {
+  /** 선택형은 선지 번호(0부터), 서술형은 학생이 쓴 글 */
+  value: number | string;
+  submittedAt: string;
+  /** 선택형 자동 채점 결과. 서술형은 null */
+  correct: boolean | null;
+  /** 서술형 자기 점검 */
+  selfMark?: 'ok' | 'partial' | 'no';
+}
+
+export interface UnitProgress {
+  stages: Partial<Record<StageKey, { status: StageStatus; updatedAt: string }>>;
+  answers: Record<string, AnswerRecord>;
+  note?: string;
+  noteUpdatedAt?: string;
+  startedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+export interface LastPosition {
+  unitId: string;
+  stageKey: StageKey;
+  semester: 1 | 2;
+  at: string;
+}
+
+export interface ProgressState {
+  version: 1;
+  uid: string;
+  lastPosition?: LastPosition;
+  units: Record<string, UnitProgress>;
+  exams: Record<string, AnswerRecord>;
+  updatedAt: string;
+}
+
+export interface ProgressBackend {
+  load(uid: string): Promise<ProgressState | null>;
+  save(state: ProgressState): Promise<void>;
+  readonly label: string;
+}

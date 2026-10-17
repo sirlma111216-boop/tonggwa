@@ -1,0 +1,11 @@
+[
+  {
+    "uid": "student-local-001",
+    "displayName": "학생",
+    "emails": [
+      "sirlma111216@gmai.com",
+      "sirlma111216@gmail.com"
+    ],
+    "passwordSha256": "3e71c610d3cf492f4cc9fb5c53d416854790d945e48fd8c14b92f28aeefdc823"
+  }
+]
