@@ -1,0 +1,124 @@
+.pilot-lesson { --pilot-ink: #172d43; --pilot-soft: #eff5f9; }
+.pilot-lesson-head { background: #172d43; color: #fff; border-radius: 18px; padding: 28px 30px; position: relative; overflow: hidden; }
+.pilot-lesson-head::after { content: ''; position: absolute; width: 180px; height: 180px; border: 1px solid #ffffff17; border-radius: 50%; right: -80px; top: -80px; pointer-events: none; }
+.pilot-mode { display: inline-flex; align-items: center; gap: 8px; color: #b5e8df; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+.pilot-mode > span { font-size: 23px; line-height: 1; }
+.pilot-lesson-head h2 { font-size: clamp(22px, 3.5vw, 30px); line-height: 1.45; margin: 14px 0; max-width: 660px; word-break: keep-all; }
+.pilot-lesson-head p { margin: 0; color: #d7e4ed; font-size: 14px; line-height: 1.7; }
+.pilot-lesson-head p > span { color: #b5e8df; margin-right: 8px; font-weight: 700; }
+.pilot-terms { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px 0; }
+.pilot-terms > span { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 3px; }
+.pilot-terms button { padding: 7px 11px; border: 1px solid #cddce5; background: #fff; color: #244762; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; min-height: 36px; }
+.pilot-terms button:hover { background: #eff5f9; }
+.pilot-terms button > span { color: #708494; padding-left: 5px; }
+.pilot-section-label { color: var(--accent-strong); font-size: 12px; font-weight: 800; letter-spacing: .07em; margin-bottom: 7px; }
+.pilot-explanation { padding: 16px 0 4px; }
+.pilot-explanation > h3 { font-size: 22px; margin: 0 0 20px; }
+.pilot-practice { scroll-margin-top: 90px; outline-offset: 5px; }
+.pilot-practice .activity { margin: 8px 0 24px; border-width: 1px; border-color: #b7d4d1; padding: 24px; background: linear-gradient(160deg, #f3f9f7, #fff 75%); }
+.pilot-practice .activity-head { align-items: flex-start; }
+.pilot-read-details { margin: 12px 0 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.pilot-read-details > summary { font-weight: 700; cursor: pointer; color: #244762; padding: 6px 0; }
+.pilot-beyond { display: grid; gap: 18px; margin-top: 28px; }
+.pilot-notebook, .pilot-video { border: 1px solid #dddccf; background: #fffdf7; border-radius: 14px; overflow: hidden; }
+.pilot-notebook > summary { cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 18px 20px; list-style: none; }
+.pilot-notebook > summary::after { content: '+'; margin-left: auto; color: #71623c; font-size: 23px; }
+.pilot-notebook[open] > summary::after { content: '−'; }
+.pilot-notebook > summary strong, .pilot-notebook > summary small { display: block; }
+.pilot-notebook > summary small { margin-top: 4px; color: #6c674f; line-height: 1.5; }
+.pilot-notebook .badge { white-space: normal; text-align: center; }
+.pilot-corner-icon { font-size: 30px; color: #8b7650; flex-shrink: 0; }
+.pilot-corner-body { padding: 0 24px 24px; line-height: 1.75; }
+.pilot-note-prompts { list-style: none; padding: 0; display: grid; gap: 9px; margin: 18px 0; }
+.pilot-note-prompts li { border: 1px dashed #d1c7ae; border-radius: 8px; padding: 12px 15px; background: #fff; }
+.pilot-note-prompts strong { display: block; font-size: 14px; color: #6b5b34; }
+.pilot-note-prompts span { font-size: 14px; }
+.pilot-note-model { border-top: 1px solid #ded7c5; margin-top: 22px; padding-top: 18px; }
+.pilot-note-model h4 { margin: 12px 0; }
+.pilot-model-grid { display: grid; gap: 12px; margin: 18px 0; }
+.pilot-model-grid.layout-compare, .pilot-model-grid.layout-data { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pilot-model-grid > section { padding: 14px; border: 1px solid #c8d9ca; border-radius: 10px; background: #fff; min-width: 0; }
+.pilot-model-grid h5 { font-size: 14px; color: #27634c; margin: 0 0 8px; }
+.pilot-model-grid .prose { font-size: 14px; line-height: 1.8; }
+.pilot-model-grid .prose p:last-child { margin-bottom: 0; }
+.pilot-model-grid .prose p { white-space: pre-line; }
+.pilot-model-grid.layout-sequence > section + section::before, .pilot-model-grid.layout-causal > section + section::before { content: '↓'; display: block; color: #45886a; margin: -12px 0 6px; }
+.pilot-mark-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.pilot-cheer { font-size: 14px; padding: 12px 16px; background: #e8f5ee; border: 1px solid #c6e1d1; border-radius: 9px; color: #246249; margin: 14px 0 0; }
+.pilot-video { padding: 20px 24px; background: #f6f8fb; border-color: #d9e1e9; }
+.pilot-video-head { display: flex; gap: 12px; align-items: center; }
+.pilot-video-head .pilot-corner-icon { color: #526f88; }
+.pilot-video-head h3 { font-size: 17px; margin: 0; }
+.pilot-video-head p { margin: 4px 0 0; font-size: 12px; color: #5b7084; }
+.pilot-video video { display: block; width: 100%; margin-top: 16px; border-radius: 9px; background: #172d43; }
+.pilot-sources { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 12px; }
+.pilot-sources a { font-weight: 650; font-size: 14px; text-decoration: none; }
+.pilot-sources a > span { font-size: 11px; border: 1px solid #bdcbd8; color: #465f77; padding: 2px 5px; border-radius: 4px; margin-right: 8px; }
+.pilot-sources small { display: block; color: #5c6b7a; margin: 4px 0 0; line-height: 1.6; }
+.pilot-production { border-top: 1px solid #d9e1e9; padding-top: 12px; font-size: 13px; line-height: 1.8; }
+.pilot-production > summary { cursor: pointer; color: #526476; }
+.pilot-production li { margin-bottom: 8px; }
+.pilot-unit-panel { border: 1px solid #c9d9df; border-radius: 18px; background: #fff; overflow: hidden; margin: 22px 0; }
+.pilot-unit-intro { background: #172d43; color: #fff; padding: 27px 30px; }
+.pilot-eyebrow { font-weight: 750; color: #a6dfd5; font-size: 12px; letter-spacing: .09em; }
+.pilot-unit-intro h2 { margin: 12px 0 10px; font-size: 25px; line-height: 1.5; word-break: keep-all; }
+.pilot-unit-intro p { margin: 0; color: #d3e0ea; font-size: 14px; }
+.pilot-unit-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 20px 24px 0; }
+.pilot-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 22px 24px 12px; }
+.pilot-stats > div { border-right: 1px solid var(--border); }
+.pilot-stats > div:last-child { border: 0; }
+.pilot-stats strong { display: block; font-size: 26px; color: #1d4c58; }
+.pilot-stats strong small { font-size: 14px; color: #637d82; font-weight: 500; }
+.pilot-stats span { display: block; font-size: 12px; color: var(--muted); padding-top: 3px; }
+.pilot-stats-note { font-size: 12px; color: var(--muted); margin: 0; padding: 0 24px 16px; }
+.pilot-unit-panel > .pilot-cheer { margin: 0 24px 16px; }
+.pilot-evidence-details { padding: 0 24px 18px; font-size: 13px; color: var(--muted); }
+.pilot-evidence-details summary { cursor: pointer; }
+.pilot-transfer { border: 1px solid #ccd9e8; padding: 28px; background: #f4f7fc; border-radius: 16px; margin-top: 28px; }
+.pilot-transfer > h2 { font-size: 21px; margin: 8px 0; }
+.pilot-transfer > p { font-size: 14px; color: #546880; }
+.pilot-review-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.pilot-transfer-item h3 { font-size: 17px; line-height: 1.75; white-space: pre-line; }
+.pilot-transfer-item fieldset { display: grid; gap: 8px; padding: 0; margin: 16px 0; border: 0; }
+.pilot-option { display: flex; align-items: flex-start; gap: 10px; border: 1px solid #c8d3df; border-radius: 10px; padding: 14px; font-size: 15px; background: #fff; cursor: pointer; }
+.pilot-option.selected { border-color: #42739e; box-shadow: inset 0 0 0 1px #42739e; background: #eef5fc; }
+.pilot-option input { margin-top: 4px; flex-shrink: 0; accent-color: #295b85; }
+.pilot-transfer .w-feedback { font-size: 14px; line-height: 1.8; font-weight: 500; }
+.pilot-launch { margin-top: 24px; display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+.pilot-launch > a { padding: 24px; border: 1px solid #d0dbe1; border-radius: 15px; text-decoration: none; color: #243e50; background: #edf4f7; transition: transform .15s; }
+.pilot-launch > a:nth-child(2) { background: #f6f1e7; border-color: #dfd5c2; }
+.pilot-launch > a:hover { transform: translateY(-2px); }
+.pilot-launch small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #526c7e; }
+.pilot-launch strong { display: block; font-size: 21px; margin: 10px 0; }
+.pilot-launch span { font-size: 13px; line-height: 1.65; display: block; }
+.pilot-skip { font-size: 12px; padding: 7px; color: var(--muted); border: 0; background: none; text-decoration: underline; cursor: pointer; }
+.pilot-score { font-size: 12px; font-weight: 700; color: #276a57; white-space: nowrap; }
+.pilot-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+@media (max-width: 1023px) {
+  .lesson-body.with-help .lesson-help { position: fixed; top: 112px; bottom: 110px; left: 20px; right: 20px; z-index: 18; max-height: none; background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 14px 60px #172d4338; padding: 14px; }
+}
+@media (max-width: 620px) {
+  .pilot-lesson-head { padding: 22px 20px; border-radius: 12px; }
+  .pilot-practice .activity { padding: 16px 13px; }
+  .pilot-practice .activity-head { gap: 8px; flex-wrap: wrap; }
+  .pilot-practice .activity-head .badge { margin-left: 0; }
+  .pilot-terms { gap: 6px; }
+  .pilot-notebook > summary { padding: 16px 14px; gap: 8px; }
+  .pilot-notebook > summary .badge { display: none; }
+  .pilot-corner-body, .pilot-video { padding-left: 16px; padding-right: 16px; }
+  .pilot-mark-buttons { display: grid; }
+  .pilot-model-grid.layout-compare, .pilot-model-grid.layout-data { grid-template-columns: 1fr; }
+  .pilot-unit-intro { padding: 24px 20px; }
+  .pilot-unit-tools, .pilot-stats { padding-left: 18px; padding-right: 18px; }
+  .pilot-stats { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pilot-stats > div:nth-child(even) { border: 0; }
+  .pilot-transfer { padding: 20px 16px; }
+  .pilot-launch { grid-template-columns: 1fr; }
+  .pilot-score { display: none; }
+  .lesson-actions { grid-template-columns: 1fr 1fr; gap: 6px 10px; padding: 10px 16px; }
+  .lesson-actions > .hint { grid-column: 1 / -1; grid-row: 1; }
+  .lesson-actions .btn-primary { min-width: 0; }
+  .lesson-actions .hint:empty { display: none; }
+  .lesson-body { padding-bottom: 170px; }
+}
+@media (prefers-reduced-motion: reduce) { .pilot-launch > a, .lesson-card, .lesson-progress .bar > i { transition: none; animation: none; } }

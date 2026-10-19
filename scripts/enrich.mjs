@@ -122,6 +122,31 @@ function orderFromParagraph(step, seed) {
 export function attachActivities(unit, interactivesDir) {
   const file = path.join(interactivesDir, `${unit.id}.json`);
   const authored = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { activities: [] };
+  const matches = (entry, stage, step, idx) => entry.match.stage === stage.key && (entry.match.title === step.title || entry.match.step === idx) && (entry.match.part === undefined || entry.match.part === step.part);
+  const lessonUsed = new Set();
+  const stableIds = new Set();
+  if (authored.pilot) {
+    if (authored.unitId !== unit.id) throw new Error(`${unit.id}: pilot unitId mismatch`);
+    unit.pilot = true;
+    unit.theme = authored.theme;
+    unit.notebooks = authored.notebooks || [];
+    unit.review = authored.review || [];
+    for (const [term, definition] of Object.entries(authored.glossaryDefinitions || {})) {
+      if (typeof definition !== 'string' || !definition.trim()) throw new Error(`${unit.id}: missing definition ${term}`);
+      unit.glossary[term] = { ...(unit.glossary[term] || { term, mentions: [] }), definition };
+    }
+    for (const entry of [...(authored.activities || []), ...(authored.lessons || []), ...unit.notebooks, ...unit.review]) {
+      if (!entry.id || stableIds.has(entry.id)) throw new Error(`${unit.id}: missing/duplicate stable ID ${entry.id}`);
+      stableIds.add(entry.id);
+    }
+    for (const sheet of unit.notebooks) {
+      if (!sheet.sections?.length || !sheet.criteria?.length || !sheet.model || !sheet.title || !sheet.goal) throw new Error(`${unit.id}: incomplete notebook ${sheet.id}`);
+      if (sheet.modelSections?.length !== sheet.sections.length || sheet.modelSections.some((section, i) => section.label !== sheet.sections[i].label || !section.content)) throw new Error(`${unit.id}: model must match printed notebook fields ${sheet.id}`);
+    }
+    for (const q of unit.review) {
+      if (!q.options?.length || !Number.isInteger(q.correctIndex) || !q.options[q.correctIndex] || q.options.some((o) => !o.feedback) || !q.explanation) throw new Error(`${unit.id}: incomplete transfer question ${q.id}`);
+    }
+  }
   const glossary = unit.glossary;
   const allTerms = Object.keys(glossary);
   const used = new Set();
@@ -130,14 +155,44 @@ export function attachActivities(unit, interactivesDir) {
   for (const st of unit.stages) {
     st.steps.forEach((step, idx) => {
       if (step.type === 'question') return;
+      if (authored.pilot) {
+        const replacements = {
+          'REF-01': { file: 'pilot-spectrum.svg', alt: '같은 파장 축에서 연속·방출·흡수 스펙트럼 비교. 가상 원소의 430·610 nm 선이 대응한다.' },
+          'REF-101': { file: 'pilot-star-structure.svg', alt: '현재 태양과 철 중심부를 형성한 후기 무거운 별의 구조 비교. 크기와 층 두께는 실제 비율이 아니다.' },
+        };
+        for (const [id, diagram] of Object.entries(replacements)) {
+          if (step.md.includes(`/content/images/references/${id}.png`)) {
+            const local = path.resolve(interactivesDir, '../../public/images/authored', diagram.file);
+            if (!fs.existsSync(local)) throw new Error(`${unit.id}: missing authored diagram ${diagram.file}`);
+            step.md = step.md.replace(new RegExp(`!\\[[^\\]]*\\]\\(/content/images/references/${id}\\.png\\)`, 'g'), `![${diagram.alt}](/images/authored/${diagram.file})`);
+          }
+        }
+        const plans = (authored.lessons || []).filter((l) => matches(l, st, step, idx));
+        if (plans.length !== 1) throw new Error(`${unit.id}/${st.key}/${idx}: exactly one lesson plan required`);
+        const plan = plans[0];
+        lessonUsed.add(plan);
+        const { match: _match, ...lesson } = plan;
+        step.lesson = lesson;
+        if (!['observe', 'investigate', 'compare', 'explain', 'apply', 'connect'].includes(lesson.mode) || !lesson.goal || !lesson.prompt) throw new Error(`${unit.id}: incomplete lesson ${lesson.id}`);
+        if (lesson.notebookId && !unit.notebooks.some((n) => n.id === lesson.notebookId)) throw new Error(`${unit.id}: unknown notebook ${lesson.notebookId}`);
+        for (const term of lesson.terms || []) {
+          if (!unit.glossary[term]?.definition) throw new Error(`${unit.id}: undefined lesson term ${term}`);
+        }
+        const video = lesson.video;
+        if (!video?.brief || !video.title || !video.duration || !video.scenes?.length || !video.checkQuestion || !video.avoid?.length || !video.sources?.length) throw new Error(`${unit.id}: incomplete video ${lesson.id}`);
+        for (const source of video.sources) {
+          if (!/^https:\/\//.test(source.url) || !source.label || !source.note || !['article', 'video', 'interactive'].includes(source.kind)) throw new Error(`${unit.id}: invalid source ${source.url}`);
+        }
+      }
       const seed = hash(`${unit.id}/${st.key}/${idx}`);
-      const found = (authored.activities || []).filter((a) => a.match.stage === st.key && (a.match.title === step.title || a.match.step === idx) && (a.match.part === undefined || a.match.part === step.part));
+      const found = (authored.activities || []).filter((a) => matches(a, st, step, idx));
       if (found.length) {
-        step.activities = found.map((a) => ({ widget: a.widget, title: a.title, intro: a.intro, props: a.props }));
+        step.activities = found.map((a) => ({ id: a.id, widget: a.widget, title: a.title, intro: a.intro, props: a.props }));
         found.forEach((a) => used.add(a));
         authoredCount += found.length;
         return;
       }
+      if (authored.pilot) throw new Error(`${unit.id}/${st.key}/${idx}: pilot requires authored activity`);
       if (step.type === 'remediation') return;
       const auto =
         clozeFromDefinition(step, glossary, allTerms, seed) ||
@@ -146,7 +201,7 @@ export function attachActivities(unit, interactivesDir) {
           widget: 'reflect',
           title: '내 말로 한 줄',
           auto: true,
-          props: { prompt: `‘${step.title}’에서 기억할 한 가지를 내 말로 적어 보세요.`, placeholder: '예: 같은 부피를 섞어도 단위부피당 이온 수가 다르면 중성이 아니다.' },
+          props: { prompt: `‘${step.title}’에서 기억할 한 가지를 내 말로 적어 보세요.`, placeholder: '핵심 개념과 그 이유를 연결해서 써 보세요.' },
         };
       step.activities = [auto];
       autoCount++;
@@ -154,6 +209,9 @@ export function attachActivities(unit, interactivesDir) {
   }
   for (const a of authored.activities || []) {
     if (!used.has(a)) throw new Error(`${unit.id}: 집필 활동이 어느 카드에도 연결되지 않음 → ${JSON.stringify(a.match)}`);
+  }
+  for (const lesson of authored.lessons || []) {
+    if (!lessonUsed.has(lesson)) throw new Error(`${unit.id}: unused lesson ${lesson.id}`);
   }
   unit.glossaryExtra = authored.glossaryExtra || {};
   unit.links = authored.links || {};

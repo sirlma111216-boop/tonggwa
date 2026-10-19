@@ -17,12 +17,39 @@ export interface UnitProgress {
   stages: Partial<Record<StageKey, { status: StageStatus; step?: number; updatedAt: string }>>;
   answers: Record<string, AnswerRecord>;
   /** 카드 활동 결과. key = stageKey/stepIndex/activityIndex */
-  activities?: Record<string, { done: boolean; correct?: boolean; at: string }>;
+  activities?: Record<string, ActivityRecord>;
+  activityDrafts?: Record<string, unknown>;
+  notebookChecks?: Record<string, NotebookCheck>;
+  transferAnswers?: Record<string, TransferAnswer>;
   note?: string;
   noteUpdatedAt?: string;
   startedAt: string;
   updatedAt: string;
   completedAt?: string;
+}
+
+export interface ActivityRecord {
+  done: boolean;
+  correct?: boolean;
+  firstCorrect?: boolean;
+  attempts?: number;
+  points?: number;
+  at: string;
+}
+
+export interface NotebookCheck {
+  writtenAt?: string;
+  mark?: 'matched' | 'corrected' | 'revisit';
+  checkedAt?: string;
+}
+
+export interface TransferAnswer {
+  value: number;
+  correct: boolean;
+  submittedAt: string;
+  /** 설명을 본 뒤 재응답하더라도 최초 독립 응답은 보존한다. */
+  firstCorrect: boolean;
+  attempts: number;
 }
 
 export interface LastPosition {

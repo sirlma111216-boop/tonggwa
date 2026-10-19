@@ -1,12 +1,15 @@
 /* 개념 카드 아래에 붙는 상호작용 활동 위젯들.
    모든 위젯은 { props, onResult } 를 받고, 학생이 확인을 누르면 onResult({correct}) 를 호출한다. */
 import { useMemo, useState, type ReactElement } from 'react';
+import { SCIENCE_WIDGETS } from './ScienceWidgets';
 
 export type WidgetResult = { correct?: boolean };
-interface W<P> {
+export interface W<P> {
   props: P;
   onResult: (r: WidgetResult) => void;
   onNote?: (line: string) => void;
+  savedState?: unknown;
+  onState?: (state: unknown) => void;
 }
 
 const fmt = (n: number) => {
@@ -455,5 +458,6 @@ export function Ions({ props, onResult }: W<{ h: number; oh: number; max: number
 }
 
 export const WIDGETS: Record<string, (p: W<any>) => ReactElement> = { // eslint-disable-line @typescript-eslint/no-explicit-any
+  ...SCIENCE_WIDGETS,
   cloze: Cloze, order: Order, reflect: Reflect, sorter: Sorter, ladder: Ladder, converter: Converter, ratio: Ratio, echo: Echo, resolve: Resolve, truefalse: TrueFalse, ions: Ions,
 };

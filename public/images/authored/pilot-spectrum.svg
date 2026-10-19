@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="410" viewBox="0 0 760 410" role="img" aria-labelledby="title desc">
+ <title id="title">같은 파장 축에서 비교하는 세 가지 스펙트럼</title>
+ <desc id="desc">연속 스펙트럼은 색이 이어진 띠, 방출은 어두운 바탕에 밝은 선, 흡수는 연속 바탕에 어두운 선이다. 가상 원소의 선은 430과 610 나노미터로 대응하며 실제 원소의 측정 자료가 아니다.</desc>
+ <defs><linearGradient id="light"><stop stop-color="#784bc6"/><stop offset=".2" stop-color="#3b73d2"/><stop offset=".4" stop-color="#32a78a"/><stop offset=".6" stop-color="#d5c45b"/><stop offset=".8" stop-color="#e39c45"/><stop offset="1" stop-color="#cc5e6f"/></linearGradient></defs>
+ <rect width="760" height="410" rx="18" fill="#f3f7fa"/>
+ <g font-family="Pretendard, Malgun Gothic, sans-serif" fill="#243d53">
+  <text x="28" y="38" font-size="23" font-weight="700">밝고 어두워도, 선의 위치는 대응해요</text>
+  <text x="28" y="66" font-size="14">430 · 610 nm에 선을 만드는 가상 원소를 비교한 모식도</text>
+  <g font-size="18" font-weight="700"><text x="28" y="120">연속</text><text x="28" y="199">방출</text><text x="28" y="278">흡수</text></g>
+  <rect x="170" y="91" width="540" height="48" rx="5" fill="url(#light)"/>
+  <rect x="170" y="170" width="540" height="48" rx="5" fill="#17243c"/>
+  <rect x="170" y="249" width="540" height="48" rx="5" fill="url(#light)"/>
+  <path d="M224 176v36M548 176v36" stroke="#ffe0a3" stroke-width="5"/>
+  <path d="M224 249v48M548 249v48" stroke="#17243c" stroke-width="5"/>
+  <path d="M224 221v24M548 221v24" stroke="#60778a" stroke-dasharray="3 3"/>
+  <g font-size="13" fill="#50697e"><text x="28" y="142">이어지는 빛</text><text x="28" y="221">밝은 선</text><text x="28" y="300">약해진 빛</text></g>
+  <path d="M170 319h540M170 315v9M350 315v9M530 315v9M710 315v9" stroke="#50697e"/>
+  <g font-size="14" text-anchor="middle"><text x="170" y="347">400</text><text x="350" y="347">500</text><text x="530" y="347">600</text><text x="710" y="347">700</text><text x="440" y="376">파장 (nm) →</text></g>
+  <text x="28" y="397" font-size="12" fill="#596c7b">선의 위치를 보기 위한 모형입니다. 색·세기·선폭은 실제 관측 전체를 나타내지 않습니다.</text>
+ </g>
+</svg>

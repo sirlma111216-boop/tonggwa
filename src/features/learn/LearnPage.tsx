@@ -10,6 +10,7 @@ import { Markdown } from './Markdown';
 import { QuestionStep } from './QuestionStep';
 import { TermContext } from './TermContext';
 import { TermPanel } from './TermPanel';
+import { PilotLesson, PilotUnitPanel, TransferReview, pilotEvidence } from './PilotLesson';
 
 const STAGE_DESC: Record<StageKey, string> = {
   prerequisite: '이 단원에 필요한 중학교 개념을 짧게 확인해요',
@@ -26,14 +27,17 @@ function useUnitData(unitId: string) {
   const [unit, setUnit] = useState<Unit | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    let alive = true;
     setUnit(null);
     setError(null);
     Promise.all([loadManifest(), loadUnit(unitId)])
       .then(([m, u]) => {
+        if (!alive) return;
         setManifest(m);
         setUnit(u);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => { if (alive) setError(e instanceof Error ? e.message : String(e)); });
+    return () => { alive = false; };
   }, [unitId]);
   return { manifest, unit, error };
 }
@@ -47,7 +51,7 @@ export function LearnPage() {
   if (stageKey === 'done') return <UnitDone unit={unit} manifest={manifest} />;
   const stage = unit.stages.find((s) => s.key === stageKey);
   if (!stage) return <Navigate to={`/learn/${unitId}`} replace />;
-  return <StagePlayer key={stage.key} unit={unit} stage={stage} manifest={manifest} />;
+  return <StagePlayer key={`${unit.id}/${stage.key}`} unit={unit} stage={stage} manifest={manifest} />;
 }
 
 /* ---------------- 단원 지도: 7단계를 경로로 보여 준다 ---------------- */
@@ -67,6 +71,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
         <span className="badge">{unit.code}</span>
       </div>
       {unit.goal && <p className="learn-goal"><strong>도달 목표</strong> · {unit.goal}</p>}
+      {unit.pilot && <PilotUnitPanel unit={unit} />}
       <div className="row" style={{ margin: '16px 0 22px' }}>
         <Link className="btn btn-primary btn-lg" to={`/learn/${unit.id}/${firstOpen.key}`}>
           {doneCount === 0 ? '학습 시작' : doneCount === unit.stages.length ? '처음부터 다시 보기' : `이어서: ${firstOpen.label}`} →
@@ -85,7 +90,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
                 <span className={`dot ${st}`}>{st === 'done' ? '✓' : i + 1}</span>
                 <span className="path-main">
                   <span className="path-title">{s.label}</span>
-                  <span className="path-desc">{STAGE_DESC[s.key]}</span>
+                  <span className="path-desc">{unit.pilot && s.key === 'concept' ? '그림과 활동으로 핵심 개념을 연결해요' : STAGE_DESC[s.key]}</span>
                 </span>
                 <span className="path-meta">
                   {s.kind === 'check' ? `${qn}문항${st === 'done' && choiceN ? ` · 선택형 ${correct}/${choiceN} 정답` : ''}` : `${s.steps.length}화면`}
@@ -99,6 +104,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
           );
         })}
       </ol>
+      {unit.pilot && <TransferReview key={unit.id} unit={unit} />}
     </div>
   );
 }
@@ -139,6 +145,8 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   const step = idx < total ? stage.steps[idx] : null;
   const q = step?.type === 'question' ? unit.questions[step.id] : null;
   const record = q ? up?.answers[q.id] : undefined;
+  const pendingActivity = !!(unit.pilot && step && step.type !== 'question' && step.activities?.some((a) => !up?.activities?.[a.id!]?.done));
+  const evidence = unit.pilot ? pilotEvidence(unit, up) : null;
 
   useEffect(() => {
     if (record && !answers) loadAnswers(unit.id).then(setAnswers);
@@ -181,6 +189,11 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
     if (idx === total) return { label: nextStage ? '다음 단계로 →' : '단원 마치기 →', disabled: false, run: () => navigate(nextStage ? `/learn/${unit.id}/${nextStage}` : `/learn/${unit.id}/done`) };
     if (q && !record) return { label: '확인', disabled: !(qApi.current?.canCheck ?? false), run: () => qApi.current?.check() };
     if (q && record) return { label: idx + 1 === total ? '결과 보기 →' : '다음 →', disabled: needSelfMark, run: () => go(idx + 1) };
+    if (pendingActivity) return { label: '활동해 보기 ↓', disabled: false, run: () => {
+      const activity = document.getElementById('pilot-practice');
+      activity?.focus({ preventScroll: true });
+      activity?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+    } };
     return { label: idx + 1 === total ? '정리하기 →' : '다음 →', disabled: false, run: () => go(idx + 1) };
   })();
 
@@ -191,6 +204,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
     const h = (e: KeyboardEvent) => {
       if (e.key !== 'Enter' || e.isComposing) return;
       const t = e.target as HTMLElement;
+      if (t?.closest('input, select, [contenteditable="true"], .pilot-lesson, .activity')) return;
       if (t?.tagName === 'TEXTAREA' && !(e.ctrlKey || e.metaKey)) return;
       if (t?.tagName === 'BUTTON' || t?.tagName === 'A') return;
       const p = primaryRef.current;
@@ -224,7 +238,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
         <Link to={`/learn/${unit.id}`} className="btn btn-text lesson-exit" title="단원 지도로 나가기">✕ 나가기</Link>
         <div className="lesson-where">
           <span className="lesson-unit">{unit.title}</span>
-          <span className="lesson-stage">{stageIdx + 1}단계 · {stage.label}</span>
+          <span className="lesson-stage">{stageIdx + 1}단계 · {stage.label} {evidence && <span className="pilot-score">· {evidence.points} XP</span>}</span>
         </div>
         <div className="lesson-progress" aria-label={`진행 ${pct}%`}>
           <div className="bar"><i style={{ width: `${pct}%` }} /></div>
@@ -235,7 +249,8 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
 
       <div className={`lesson-body${help ? ' with-help' : ''}`}>
         <div className="lesson-card" key={anim}>
-          {step && step.type !== 'question' && (
+          {step && step.type !== 'question' && step.lesson && <PilotLesson key={step.lesson.id} unit={unit} step={step} />}
+          {step && step.type !== 'question' && !step.lesson && (
             <article className={`step-read${step.type === 'remediation' ? ' step-remed' : ''}`}>
               <div className="step-kicker">
                 <span className="badge">{step.type === 'remediation' ? '보충 설명' : `${stage.label} · ${idx + 1}/${total}`}</span>
@@ -275,6 +290,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
         <span className="hint muted small">
           {q && !record && (q.kind === 'choice' ? '번호를 고르고 확인을 누르세요 (키보드 1~5, Enter)' : '답을 쓰고 확인을 누르세요 (Ctrl+Enter)')}
           {needSelfMark && '위에서 내 답을 어떻게 썼는지 표시하면 다음으로 갈 수 있어요'}
+          {pendingActivity && <button className="pilot-skip" onClick={() => go(idx + 1)}>지금은 넘어가고 나중에 도전하기</button>}
         </span>
         <button className="btn btn-primary btn-lg" disabled={primary.disabled} onClick={primary.run}>{primary.label}</button>
       </footer>
@@ -299,7 +315,7 @@ function StageSummary({ unit, stage, nextStage, manifest }: { unit: Unit; stage:
       <div className="step-kicker"><span className="badge badge-done">단계 완료</span></div>
       <h2 className="step-title">{stage.label} 단계를 마쳤어요</h2>
       {stage.kind === 'read' ? (
-        <p className="prose">{stage.steps.length}개 화면의 설명을 모두 읽었어요. {nextLabel ? `다음은 ${nextLabel}이에요.` : ''}</p>
+        <p className="prose">{stage.steps.length}개 화면의 마지막에 도착했어요. {unit.pilot ? '활동과 필기 기록은 단원 지도에서 확인할 수 있어요. ' : ''}{nextLabel ? `다음은 ${nextLabel}이에요.` : ''}</p>
       ) : (
         <>
           <div className="summary-grid">
@@ -325,6 +341,7 @@ function StageSummary({ unit, stage, nextStage, manifest }: { unit: Unit; stage:
           )}
         </>
       )}
+      {unit.pilot && stage.kind === 'read' && <div className="notice notice-info">{stage.steps.flatMap((s) => s.type === 'question' ? [] : s.activities ?? []).filter((a) => up?.activities?.[a.id!]?.done).length} / {stage.steps.flatMap((s) => s.type === 'question' ? [] : s.activities ?? []).length} 활동에 응답했어요. 아직 시도하지 않은 활동은 언제든 돌아가 도전할 수 있어요.</div>}
       {!nextStage && unit.answerNotes && (
         <div className="notice notice-info" style={{ marginTop: 16, fontSize: 'inherit' }}>
           <Markdown md={unit.answerNotes} />
@@ -353,6 +370,7 @@ function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
     <div className="page page-narrow">
       <p className="crumbs"><Link to="/">시작</Link> › <Link to={`/start/units/${unit.semester}`}>{unit.semester}학기</Link> › {unit.chapter.title}</p>
       <h1>{unit.title}</h1>
+      {unit.pilot && <PilotUnitPanel unit={unit} />}
       <div className="card stack">
         <div className={`notice ${done === keys.length ? 'notice-ok' : 'notice-warn'}`}>
           {done === keys.length ? '일곱 단계를 모두 마쳤어요.' : `${keys.length}단계 중 ${done}단계를 마쳤어요. 남은 단계는 단원 지도에서 열 수 있어요.`}
@@ -376,6 +394,7 @@ function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
           <Link className="btn" to={`/start/units/${unit.semester}`}>단원 목록</Link>
         </div>
       </div>
+      {unit.pilot && <TransferReview key={unit.id} unit={unit} />}
     </div>
   );
 }

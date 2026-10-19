@@ -52,6 +52,7 @@ export interface Manifest {
 }
 
 export interface Activity {
+  id?: string;
   widget: string;
   title: string;
   intro?: string;
@@ -60,10 +61,52 @@ export interface Activity {
   props: any;
 }
 
+export interface LessonVideo {
+  title: string;
+  duration: string;
+  brief: string;
+  scenes: string[];
+  checkQuestion: string;
+  avoid: string[];
+  /** 제작이 끝난 자체 영상의 주소. 미지정 시 재생 버튼을 만들지 않는다. */
+  src?: string;
+  sources: { label: string; url: string; kind: 'article' | 'video' | 'interactive'; note: string }[];
+}
+
+export interface PilotLessonPlan {
+  id: string;
+  displayTitle?: string;
+  mode: 'observe' | 'investigate' | 'compare' | 'explain' | 'apply' | 'connect';
+  prompt: string;
+  goal: string;
+  terms: string[];
+  notebookId?: string;
+  video: LessonVideo;
+}
+
+export interface NotebookSheet {
+  id: string;
+  title: string;
+  goal: string;
+  layout: 'sequence' | 'compare' | 'causal' | 'data';
+  sections: { label: string; prompt: string }[];
+  criteria: string[];
+  model: string;
+  modelSections?: { label: string; content: string }[];
+}
+
+export interface TransferQuestion {
+  id: string;
+  prompt: string;
+  options: { text: string; feedback: string }[];
+  correctIndex: number;
+  explanation: string;
+}
+
 /** 한 화면에 해당하는 학습 단위 */
 export type Step =
-  | { type: 'concept'; title: string; md: string; part?: number; parts?: number; activities?: Activity[] }
-  | { type: 'remediation'; title: string; md: string; part?: number; parts?: number; activities?: Activity[] }
+  | { type: 'concept'; title: string; md: string; part?: number; parts?: number; activities?: Activity[]; lesson?: PilotLessonPlan }
+  | { type: 'remediation'; title: string; md: string; part?: number; parts?: number; activities?: Activity[]; lesson?: PilotLessonPlan }
   | { type: 'question'; id: string };
 
 export interface GlossaryEntry {
@@ -87,6 +130,10 @@ export interface Question {
 }
 
 export interface Unit {
+  pilot?: boolean;
+  theme?: { eyebrow: string; mission: string; accent: string };
+  notebooks?: NotebookSheet[];
+  review?: TransferQuestion[];
   id: string;
   code: string;
   no: number | null;

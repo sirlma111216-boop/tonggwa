@@ -57,6 +57,11 @@ export function StartPage() {
         </div>
       </div>
 
+      <div className="pilot-launch" aria-label="새로운 탐구 수업">
+        <Link to="/learn/unit-1-1"><small>탐구 수업 01 · 원소와 우주</small><strong>빛에 남은 우주의 단서 ↗</strong><span>스펙트럼을 겹쳐 보고, 초기 우주의 사건을 연결해요.</span></Link>
+        <Link to="/learn/unit-1-2"><small>탐구 수업 02 · 별과 생명</small><strong>별에서 내 몸까지 ↗</strong><span>원소의 여행을 따라가고, 서로 다른 성분비를 읽어요.</span></Link>
+      </div>
+
       <div className="grid-3" style={{ marginTop: 22 }}>
         <section className="card">
           <h3>이번 학습의 구조</h3>

@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell';
 import { LoginPage } from './features/account/LoginPage';
 import { ExamPage, ExamsPage } from './features/exams/ExamsPage';
 import { LearnPage } from './features/learn/LearnPage';
+import { WorkbookPage } from './features/learn/WorkbookPage';
 import { RecordPage } from './features/record/RecordPage';
 import { SemesterPage } from './features/start/SemesterPage';
 import { StartPage } from './features/start/StartPage';
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/start/semester" element={<SemesterPage />} />
           <Route path="/start/units/:semester" element={<UnitsPage />} />
           <Route path="/learn/:unitId" element={<LearnPage />} />
+          <Route path="/workbook/:unitId" element={<WorkbookPage />} />
           <Route path="/learn/:unitId/:stageKey" element={<LearnPage />} />
           <Route path="/exams" element={<ExamsPage />} />
           <Route path="/exams/:kiceId" element={<ExamPage />} />

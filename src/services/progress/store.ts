@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { StageKey } from '../../content/types';
 import { localBackend } from './localBackend';
-import type { AnswerRecord, LastPosition, ProgressBackend, ProgressState, StageStatus, UnitProgress } from './types';
+import type { AnswerRecord, LastPosition, NotebookCheck, ProgressBackend, ProgressState, StageStatus, UnitProgress } from './types';
+import { nextActivityRecord, nextTransferAnswer } from './evidence';
 
 const backend: ProgressBackend = localBackend;
 
@@ -113,7 +114,31 @@ class ProgressStore {
     this.mutate((s) => {
       const u = this.ensureUnit(s, unitId);
       u.activities ??= {};
-      u.activities[key] = { ...result, at: new Date().toISOString() };
+      u.activities[key] = nextActivityRecord(u.activities[key], result, new Date().toISOString());
+    });
+  }
+
+  saveActivityDraft(unitId: string, key: string, draft: unknown) {
+    this.mutate((s) => {
+      const u = this.ensureUnit(s, unitId);
+      u.activityDrafts ??= {};
+      u.activityDrafts[key] = draft;
+    });
+  }
+
+  checkNotebook(unitId: string, sheetId: string, check: NotebookCheck) {
+    this.mutate((s) => {
+      const u = this.ensureUnit(s, unitId);
+      u.notebookChecks ??= {};
+      u.notebookChecks[sheetId] = { ...u.notebookChecks[sheetId], ...check };
+    });
+  }
+
+  recordTransfer(unitId: string, questionId: string, value: number, correct: boolean) {
+    this.mutate((s) => {
+      const u = this.ensureUnit(s, unitId);
+      u.transferAnswers ??= {};
+      u.transferAnswers[questionId] = nextTransferAnswer(u.transferAnswers[questionId], value, correct, new Date().toISOString());
     });
   }
 

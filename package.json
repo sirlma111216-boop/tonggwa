@@ -12,6 +12,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
+    "test:pilot": "npm run content && node scripts/check-pilot-content.mjs && node --test scripts/test-pilot.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf:dev": "wrangler dev"
   },

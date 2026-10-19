@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="460" viewBox="0 0 800 460" role="img" aria-labelledby="title desc">
+ <title id="title">현재 태양과 철 중심부를 형성한 후기 무거운 별 비교</title>
+ <desc id="desc">현재 태양 중심부에서는 수소 핵융합이 일어난다. 충분히 무거운 별의 일부 후기 단계에는 바깥의 수소가 풍부한 영역부터 헬륨, 탄소·산소·규소 등을 포함하는 여러 영역과 중심 철 영역이 나타난다. 모든 별의 구조가 아니며 크기와 층 두께는 실제 비율이 아니다.</desc>
+ <rect width="800" height="460" rx="18" fill="#f4f6fa"/>
+ <g font-family="Pretendard, Malgun Gothic, sans-serif" fill="#243d53">
+  <text x="28" y="39" font-size="23" font-weight="700">같은 별 그림도, 질량과 시기를 먼저 확인해요</text>
+  <text x="28" y="67" font-size="14">철 중심부는 모든 별에 있는 것이 아닙니다.</text>
+  <rect x="28" y="90" width="350" height="310" rx="14" fill="#fff"/><rect x="394" y="90" width="378" height="310" rx="14" fill="#fff"/>
+  <text x="203" y="122" text-anchor="middle" font-size="19" font-weight="700">현재 태양</text>
+  <text x="583" y="122" text-anchor="middle" font-size="19" font-weight="700">매우 무거운 별 · 후기의 한 단계</text>
+  <circle cx="203" cy="229" r="83" fill="#efb657"/><circle cx="203" cy="229" r="36" fill="#d97f53"/>
+  <text x="203" y="225" text-anchor="middle" font-size="13" font-weight="700" fill="#172d43">중심부</text><text x="203" y="244" text-anchor="middle" font-size="12">수소 핵융합</text>
+  <circle cx="583" cy="229" r="83" fill="#efb657"/><circle cx="583" cy="229" r="64" fill="#de8653"/><circle cx="583" cy="229" r="45" fill="#b85f71"/><circle cx="583" cy="229" r="23" fill="#6c6c9e"/>
+  <g font-size="13" font-weight="700" text-anchor="middle"><text x="583" y="159">①</text><text x="583" y="179">②</text><text x="583" y="199" fill="#fff">③</text><text x="583" y="234" fill="#fff">철</text></g>
+  <text x="203" y="344" text-anchor="middle" font-size="16">수소 → 헬륨</text><text x="203" y="370" text-anchor="middle" font-size="13">중심부에서 에너지를 내는 주요 과정</text>
+  <text x="416" y="340" font-size="13">① 수소가 풍부한 바깥 영역</text><text x="416" y="361" font-size="13">② 헬륨이 풍부한 영역</text><text x="416" y="382" font-size="13">③ 탄소·산소·규소 등 여러 층을 묶어 표시</text>
+  <text x="28" y="429" font-size="13">별의 크기·층 두께·색은 실제 비율이 아닙니다. 철 중심부를 만든 후기 무거운 별에 한정한 비교입니다.</text>
+  <text x="28" y="449" font-size="12" fill="#596c7b">중심 온도는 오른쪽 단계가 더 높습니다. 표면 색이나 겉보기 밝기만으로 판단하지 않아요.</text>
+ </g>
+</svg>

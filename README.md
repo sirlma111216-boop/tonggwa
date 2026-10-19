@@ -13,10 +13,21 @@
 npm install
 npm run dev        # 교재 JSON 생성(predev) 후 Vite 개발 서버
 npm run build      # 콘텐츠 생성 → 타입 검사 → Vite 빌드 (dist/)
+npm run test:pilot # 두 탐구 단원의 집필·렌더링·기록 검증 (Node 24 이상)
 npm run deploy     # build 후 wrangler deploy (로컬에서 Cloudflare 로그인 필요)
 ```
 
 검토용 로그인 계정은 `src/services/auth/accounts.json`에 이메일과 비밀번호 SHA-256 해시로 들어 있다. 정적 사이트이므로 이 로그인은 접근 통제가 아니라 검토용 문이다. 실서비스 인증은 Firebase로 교체한다.
+
+## 원소와 우주 · 별과 생명 탐구 수업 (2026-10-19)
+
+시작 화면의 두 탐구 카드 또는 `/learn/unit-1-1`, `/learn/unit-1-2`에서 엽니다. 기존 일곱 단계와 평가 문항은 유지하면서 30개 비문항 화면에 31개의 집필 활동을 연결했습니다. 스펙트럼 비교, 사건 순서, 별 내부 모형, 구성비 전환, 증거 분류, 근거 선택을 개념에 맞게 사용합니다.
+
+- 필기장: `/workbook/unit-1-1`, `/workbook/unit-1-2`. 각 5쪽의 A4 PDF는 `public/workbooks/`에 있으며 제목·목표가 인쇄된 새 빈 양식입니다. 앱에서 ‘필기했어요’ 이후 모범 필기와 비교합니다.
+- PDF 재생성: Python에 `reportlab`, `pypdf` 설치 후 `python scripts/build-workbooks.py`. 설치된 Pretendard 글꼴을 사용합니다. 모범 필기와 평가 기준은 PDF에 넣지 않습니다.
+- 영상: `content/interactives/<unitId>.json`의 `lessons[].video`에 30개 제작 지침이 있습니다. 실제 영상 검수 후 `src`에 자체 영상 URL을 넣으면 재생기가 나타납니다. 전체 기획서는 [영상 제작 지침](docs/pilot-video-briefs.md)에 있습니다.
+- 기록: 안정적인 활동 ID로 조작 상태·최초 정오답·재시도·필기 자기 점검·새 자료 문제를 저장합니다. 도전 5 XP, 해결 추가 5 XP이며 활동당 10 XP를 넘지 않습니다. 화면 완료·XP·필기 확인은 숙달 판정이 아닙니다.
+- 검증: `npm run test:pilot`은 두 단원의 연결 누락, 정답 키, 과학 모형의 데이터 조건, 제출 전 해설 숨김, 상태 복원, 보상 중복을 확인합니다. 화면 캡처 검증을 대신하는 테스트는 아닙니다.
 
 ## 폴더
 
