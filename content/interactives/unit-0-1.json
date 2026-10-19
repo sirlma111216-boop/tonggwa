@@ -1,0 +1,187 @@
+{
+  "unitId": "unit-0-1",
+  "glossaryExtra": {
+    "규모": "같은 ‘크기’라는 말도 길이·부피·시간 중 무엇을 재는지에 따라 비교 대상이 달라져요. 규모를 말할 때는 ‘무엇의 길이(또는 시간)인가’를 먼저 정해요. 예: 원자의 지름(길이) ↔ 세포의 지름(길이)은 비교 가능, 원자의 지름 ↔ 세포의 부피는 비교 불가.",
+    "광년": "빛의 속력은 약 3.0 × 10⁸ m/s예요. 1년은 약 3.15 × 10⁷ s이므로 1광년 ≈ 9.5 × 10¹⁵ m, 대략 9조 5천억 km예요. ‘년’이 붙었지만 거리 단위라는 점을 꼭 기억하세요."
+  },
+  "links": {
+    "광년": [{ "label": "한국천문연구원 천문우주지식정보 · 광년", "url": "https://astro.kasi.re.kr/learning/pageView/5255" }]
+  },
+  "activities": [
+    {
+      "match": { "stage": "concept", "title": "경험하는 세계와 자연 전체는 다르다" },
+      "widget": "sorter",
+      "title": "미시 세계일까, 거시 세계일까?",
+      "intro": "사람의 감각으로 직접 구별하기 어려운 작은 것은 미시, 일상보다 훨씬 큰 것은 거시예요. 각 대상을 알맞은 상자에 넣어 보세요.",
+      "props": {
+        "bins": [
+          { "id": "micro", "label": "미시 세계" },
+          { "id": "daily", "label": "일상 규모" },
+          { "id": "macro", "label": "거시 세계" }
+        ],
+        "items": [
+          { "text": "피부 세포 하나", "bin": "micro" },
+          { "text": "수소 원자", "bin": "micro" },
+          { "text": "운동장 100 m", "bin": "daily" },
+          { "text": "사람의 키", "bin": "daily" },
+          { "text": "지구와 태양 사이 거리", "bin": "macro" },
+          { "text": "은하의 지름", "bin": "macro" }
+        ],
+        "explain": "경계 숫자가 하나로 정해져 있지는 않아요. 무엇과 비교하는지, 감각으로 구별되는지를 기준으로 생각해요."
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "경험하는 세계와 자연 전체는 다르다" },
+      "widget": "ladder",
+      "title": "규모 사다리를 움직여 보세요",
+      "intro": "눈금 한 칸이 10배예요. 손잡이를 움직여 각 대상이 어디쯤인지 느껴 보세요.",
+      "props": {
+        "unit": "m",
+        "items": [
+          { "label": "원자핵", "meters": 1e-15 },
+          { "label": "수소 원자", "meters": 1e-10 },
+          { "label": "바이러스", "meters": 1e-7 },
+          { "label": "세포핵", "meters": 5e-6 },
+          { "label": "머리카락 굵기", "meters": 8e-5 },
+          { "label": "사람의 키", "meters": 1.7 },
+          { "label": "지구의 지름", "meters": 1.3e7 },
+          { "label": "지구–태양 거리", "meters": 1.5e11 },
+          { "label": "1광년", "meters": 9.5e15 }
+        ],
+        "question": { "prompt": "원자핵보다 10만 배(10⁵배) 정도 큰 것은 무엇일까요?", "answer": "수소 원자" }
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "이름이 같은 ‘핵’도 대상과 규모가 다르다" },
+      "widget": "order",
+      "title": "세 가지 ‘핵’을 작은 것부터 놓아 보세요",
+      "props": {
+        "items": ["지구 핵", "원자핵", "세포핵"],
+        "answer": ["원자핵", "세포핵", "지구 핵"],
+        "hint": "원자핵은 10⁻¹⁵~10⁻¹⁴ m, 세포핵은 μm, 지구 핵은 수천 km 수준이에요."
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "이름이 같은 ‘핵’도 대상과 규모가 다르다" },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "이름이 모두 ‘핵’이므로 세 구조의 크기는 비슷하다.", "answer": false, "why": "같은 말을 쓸 뿐 구조도 크기도 달라요. 원자핵 < 세포핵 < 지구 핵이에요." },
+          { "text": "세포핵을 보는 현미경으로 지구 내부의 핵도 직접 볼 수 있다.", "answer": false, "why": "지구 내부는 지진파 같은 간접 자료를 해석해 구조를 추론해요." },
+          { "text": "어떤 도구를 쓰는가는 크기뿐 아니라 대상에 접근할 수 있는지에도 달려 있다.", "answer": true, "why": "크기, 접근 가능성, 얻을 수 있는 신호를 함께 봐요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "작은 수와 큰 수를 읽는 방법", "part": 1 },
+      "widget": "converter",
+      "title": "단위 변환기로 직접 바꿔 보세요",
+      "intro": "값과 단위를 고르면 다른 단위로 바뀌는 과정을 보여 줘요. 그다음 아래 문제를 직접 풀어 보세요.",
+      "props": {
+        "quantity": "length",
+        "challenges": [
+          { "prompt": "4 μm는 몇 nm일까요?", "value": 4, "from": "μm", "to": "nm", "answer": 4000 },
+          { "prompt": "2 × 10⁴ nm는 몇 μm일까요?", "value": 20000, "from": "nm", "to": "μm", "answer": 20 },
+          { "prompt": "0.03 mm는 몇 μm일까요?", "value": 0.03, "from": "mm", "to": "μm", "answer": 30 }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "작은 수와 큰 수를 읽는 방법", "part": 2 },
+      "widget": "converter",
+      "title": "시간 단위도 같은 방식이에요",
+      "props": {
+        "quantity": "time",
+        "challenges": [
+          { "prompt": "3 ms는 몇 μs일까요?", "value": 3, "from": "ms", "to": "μs", "answer": 3000 },
+          { "prompt": "0.8 ms는 몇 μs일까요?", "value": 0.8, "from": "ms", "to": "μs", "answer": 800 }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "단위를 맞추는 계산을 한 줄씩 따라가기" },
+      "widget": "ratio",
+      "title": "두 길이를 같은 단위로 맞춰 몇 배인지 구해 보세요",
+      "props": {
+        "a": { "label": "A", "value": 0.007, "unit": "mm" },
+        "b": { "label": "B", "value": 2500, "unit": "nm" },
+        "baseUnit": "μm",
+        "aBase": 7,
+        "bBase": 2.5,
+        "ratio": 2.8,
+        "ratioPrompt": "A는 B의 몇 배인가요? (A ÷ B)"
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "측정 기술은 관찰 가능한 범위를 넓힌다" },
+      "widget": "echo",
+      "title": "소리의 왕복 시간으로 거리를 구해 보세요",
+      "intro": "신호가 갔다가 돌아오면 ‘속력 × 왕복 시간’은 왕복 거리예요. 장치와 대상 사이 거리는 그 절반이에요.",
+      "props": {
+        "speed": 340,
+        "speedLabel": "소리의 속력 340 m/s",
+        "tMin": 0.05,
+        "tMax": 1,
+        "tStep": 0.05,
+        "challenge": { "t": 0.2, "prompt": "왕복 시간이 0.20 s일 때 반사면까지의 거리는 몇 m일까요?", "answer": 34 }
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "측정 기술은 관찰 가능한 범위를 넓힌다" },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "흐릿한 사진을 크게 확대하면 원래 구별되지 않던 두 점이 구별된다.", "answer": false, "why": "크게 보이는 것과 세부가 구별되는 것은 달라요. 기록되지 않은 정보는 확대해도 생기지 않아요." },
+          { "text": "광년은 거리 단위다.", "answer": true, "why": "빛이 진공에서 1년 동안 이동하는 거리예요. 이름의 ‘년’에 속지 마세요." },
+          { "text": "신호가 왕복한 시간에 속력을 곱하면 장치와 대상 사이의 거리가 나온다.", "answer": false, "why": "그 값은 왕복 거리예요. 편도 거리는 절반이에요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "advanced", "title": "측정한 값과 계산으로 얻은 값을 연결하기" },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "초음파 거리 측정 장치가 실제로 먼저 재는 것은 시간 간격일 수 있다.", "answer": true, "why": "거리는 ‘속력 × 시간’으로 계산해 얻어요. 시간 측정 기술이 거리 측정을 발전시켜요." },
+          { "text": "시간만 정확히 재면 어떤 거리 측정도 정확하다.", "answer": false, "why": "신호 속력의 가정, 반사 위치, 장치 오차도 결과에 영향을 줘요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "advanced", "title": "왕복 경로를 식으로 만들기" },
+      "widget": "echo",
+      "title": "빛의 왕복으로 거리를 구해 보세요",
+      "intro": "2d = vt 이므로 d = vt/2 예요. 아주 빠른 빛이라도 식은 똑같아요.",
+      "props": {
+        "speed": 300000000,
+        "speedLabel": "빛의 속력 3.0 × 10⁸ m/s",
+        "tMin": 0.000001,
+        "tMax": 0.00001,
+        "tStep": 0.000001,
+        "tFormat": "micro",
+        "challenge": { "t": 0.000004, "prompt": "반사 신호가 4.0 × 10⁻⁶ s 뒤에 돌아왔어요. 반사 지점까지 거리는 몇 m일까요?", "answer": 600 }
+      }
+    },
+    {
+      "match": { "stage": "advanced", "title": "관측되지 않았다는 말의 범위" },
+      "widget": "resolve",
+      "title": "두 점이 구별될까요? 간격을 바꿔 보세요",
+      "intro": "점 사이 간격이 장치의 최소 구별 간격보다 작으면 한 점처럼 보여요. ‘한 점으로 보였다’가 ‘한 점이다’를 뜻하지는 않아요.",
+      "props": {
+        "gapMin": 0.1,
+        "gapMax": 1.0,
+        "gapStep": 0.05,
+        "gapStart": 0.3,
+        "unit": "μm",
+        "devices": [
+          { "name": "장치 X", "min": 0.2 },
+          { "name": "장치 Y", "min": 0.6 }
+        ],
+        "question": { "prompt": "간격이 0.4 μm인 두 점을 구별하기에 더 적절한 장치는?", "answer": "장치 X", "why": "0.4 μm는 X의 최소 간격 0.2 μm보다 크고 Y의 0.6 μm보다는 작아요." }
+      }
+    }
+  ]
+}

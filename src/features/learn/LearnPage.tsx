@@ -4,9 +4,12 @@ import { findUnitInManifest, loadAnswers, loadManifest, loadUnit, orderedUnits }
 import type { AnswerSet, Manifest, Stage, StageKey, Unit } from '../../content/types';
 import { progress, unitStageStatus, useProgress } from '../../services/progress/store';
 import type { AnswerRecord } from '../../services/progress/types';
+import { ActivityBlock } from './Activity';
 import { HelpPanel } from './HelpPanel';
 import { Markdown } from './Markdown';
 import { QuestionStep } from './QuestionStep';
+import { TermContext } from './TermContext';
+import { TermPanel } from './TermPanel';
 
 const STAGE_DESC: Record<StageKey, string> = {
   prerequisite: '이 단원에 필요한 중학교 개념을 짧게 확인해요',
@@ -107,7 +110,8 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   const state = useProgress();
   const up = state?.units[unit.id];
   const [answers, setAnswers] = useState<AnswerSet | null>(null);
-  const [help, setHelp] = useState(false);
+  const [side, setSide] = useState<null | { kind: 'help' } | { kind: 'term'; term: string }>(null);
+  const help = side !== null;
   const [anim, setAnim] = useState(0);
   const qApi = useRef<{ canCheck: boolean; check: () => void } | null>(null);
 
@@ -208,8 +212,13 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
 
   const qNumber = step?.type === 'question' ? stage.questionIds.indexOf(step.id) + 1 : 0;
   const pct = Math.round((Math.min(idx, total) / total) * 100);
+  const goTo = (stageKey: StageKey, stepIndex: number) => {
+    if (stageKey === stage.key) go(stepIndex);
+    else navigate(`/learn/${unit.id}/${stageKey}?s=${stepIndex}`);
+  };
 
   return (
+    <TermContext.Provider value={{ unit, openTerm: (term) => setSide({ kind: 'term', term }) }}>
     <div className="lesson">
       <header className="lesson-top">
         <Link to={`/learn/${unit.id}`} className="btn btn-text lesson-exit" title="단원 지도로 나가기">✕ 나가기</Link>
@@ -221,7 +230,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
           <div className="bar"><i style={{ width: `${pct}%` }} /></div>
           <span className="small muted">{Math.min(idx + 1, total)}/{total}</span>
         </div>
-        <button className={`btn btn-text${help ? ' on' : ''}`} onClick={() => setHelp((h) => !h)} aria-expanded={help}>도움 · 노트</button>
+        <button className={`btn btn-text${side?.kind === 'help' ? ' on' : ''}`} onClick={() => setSide((s) => (s?.kind === 'help' ? null : { kind: 'help' }))} aria-expanded={side?.kind === 'help'}>도움 · 노트</button>
       </header>
 
       <div className={`lesson-body${help ? ' with-help' : ''}`}>
@@ -234,6 +243,9 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
               </div>
               <h2 className="step-title">{step.title}</h2>
               <Markdown md={step.md} />
+              {step.activities?.map((a, i) => (
+                <ActivityBlock key={`${stage.key}/${idx}/${i}`} unitId={unit.id} storeKey={`${stage.key}/${idx}/${i}`} activity={a} />
+              ))}
             </article>
           )}
           {step && step.type === 'question' && q && (
@@ -251,9 +263,9 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
           )}
           {idx === total && <StageSummary unit={unit} stage={stage} nextStage={nextStage} manifest={manifest} />}
         </div>
-        {help && (
+        {side && (
           <div className="lesson-help">
-            <HelpPanel unit={unit} />
+            {side.kind === 'help' ? <HelpPanel unit={unit} /> : <TermPanel unit={unit} term={side.term} onGo={goTo} onClose={() => setSide(null)} />}
           </div>
         )}
       </div>
@@ -267,6 +279,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
         <button className="btn btn-primary btn-lg" disabled={primary.disabled} onClick={primary.run}>{primary.label}</button>
       </footer>
     </div>
+    </TermContext.Provider>
   );
 }
 

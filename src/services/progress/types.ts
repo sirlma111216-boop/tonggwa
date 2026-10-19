@@ -16,6 +16,8 @@ export interface UnitProgress {
   /** step: 마지막으로 보던 화면 번호(0부터) */
   stages: Partial<Record<StageKey, { status: StageStatus; step?: number; updatedAt: string }>>;
   answers: Record<string, AnswerRecord>;
+  /** 카드 활동 결과. key = stageKey/stepIndex/activityIndex */
+  activities?: Record<string, { done: boolean; correct?: boolean; at: string }>;
   note?: string;
   noteUpdatedAt?: string;
   startedAt: string;

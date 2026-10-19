@@ -51,11 +51,27 @@ export interface Manifest {
   stats: { standards: number; units: number; questions: number; kiceQuestions: number; images: number };
 }
 
+export interface Activity {
+  widget: string;
+  title: string;
+  intro?: string;
+  auto?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  props: any;
+}
+
 /** 한 화면에 해당하는 학습 단위 */
 export type Step =
-  | { type: 'concept'; title: string; md: string; part?: number; parts?: number }
-  | { type: 'remediation'; title: string; md: string; part?: number; parts?: number }
+  | { type: 'concept'; title: string; md: string; part?: number; parts?: number; activities?: Activity[] }
+  | { type: 'remediation'; title: string; md: string; part?: number; parts?: number; activities?: Activity[] }
   | { type: 'question'; id: string };
+
+export interface GlossaryEntry {
+  term: string;
+  definition?: string;
+  definedAt?: { stageKey: StageKey; step: number; title: string };
+  mentions: { stageKey: StageKey; step: number; title: string; sentence: string }[];
+}
 
 export interface Stage extends StageMeta {
   steps: Step[];
@@ -83,6 +99,9 @@ export interface Unit {
   stages: Stage[];
   questions: Record<string, Question>;
   prerequisite: { topic: string; middleUnits: string[]; summary: string; boundary: string } | null;
+  glossary: Record<string, GlossaryEntry>;
+  glossaryExtra: Record<string, string>;
+  links: Record<string, { label: string; url: string }[]>;
   answerNotes: string;
   chapterOutro?: string;
 }

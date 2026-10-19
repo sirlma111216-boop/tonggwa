@@ -109,6 +109,22 @@ class ProgressStore {
     });
   }
 
+  recordActivity(unitId: string, key: string, result: { done: boolean; correct?: boolean }) {
+    this.mutate((s) => {
+      const u = this.ensureUnit(s, unitId);
+      u.activities ??= {};
+      u.activities[key] = { ...result, at: new Date().toISOString() };
+    });
+  }
+
+  appendNote(unitId: string, line: string) {
+    this.mutate((s) => {
+      const u = this.ensureUnit(s, unitId);
+      u.note = (u.note ? u.note.trimEnd() + '\n' : '') + line;
+      u.noteUpdatedAt = new Date().toISOString();
+    });
+  }
+
   setNote(unitId: string, note: string) {
     this.mutate((s) => {
       const u = this.ensureUnit(s, unitId);

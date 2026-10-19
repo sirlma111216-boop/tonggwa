@@ -1,0 +1,102 @@
+{
+  "unitId": "unit-3-4",
+  "glossaryExtra": {
+    "산": "이 장의 기준은 ‘물에 녹아 H⁺를 내놓는가’예요. 화학식에 H가 있다고 모두 산은 아니에요(예: 포도당). 대표 예: 묽은 염산 HCl → H⁺ + Cl⁻.",
+    "염기": "이 장의 기준은 ‘물에 녹아 OH⁻를 내놓는가’예요. 대표 예: 수산화 나트륨 NaOH → Na⁺ + OH⁻. 산과 섞으면 H⁺ + OH⁻ → H₂O 반응이 일어나요."
+  },
+  "links": {},
+  "activities": [
+    {
+      "match": { "stage": "concept", "title": "산·염기와 중화: 무엇을 세고 무엇으로 나누는가", "part": 1 },
+      "widget": "sorter",
+      "title": "관찰 결과를 보고 산성인지 염기성인지 나눠 보세요",
+      "props": {
+        "bins": [
+          { "id": "acid", "label": "산성 용액" },
+          { "id": "base", "label": "염기성 용액" }
+        ],
+        "items": [
+          { "text": "푸른 리트머스 종이가 붉게 변함", "bin": "acid" },
+          { "text": "붉은 리트머스 종이가 푸르게 변함", "bin": "base" },
+          { "text": "페놀프탈레인 용액이 붉은색 계열로 변함", "bin": "base" },
+          { "text": "BTB 용액이 노란색", "bin": "acid" },
+          { "text": "BTB 용액이 파란색", "bin": "base" },
+          { "text": "마그네슘을 넣으니 수소 기체 발생", "bin": "acid" }
+        ],
+        "explain": "페놀프탈레인이 무색이라는 것만으로는 산성이라고 확정할 수 없어요. 중성에서도 무색이기 때문이에요."
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "산·염기와 중화: 무엇을 세고 무엇으로 나누는가", "part": 2 },
+      "widget": "ions",
+      "title": "H⁺와 OH⁻ 개수를 바꿔 가며 짝지어 보세요",
+      "intro": "H⁺와 OH⁻는 1:1로 반응해 물이 돼요. 구경꾼 이온(Cl⁻, Na⁺)은 그대로 남아요. 손잡이를 움직여 네 칸의 값이 어떻게 바뀌는지 보세요.",
+      "props": {
+        "h": 8,
+        "oh": 5,
+        "max": 12,
+        "challenge": { "h": 8, "oh": 5, "ask": "hLeft", "prompt": "H⁺ 8개와 OH⁻ 5개를 섞으면 반응 뒤 남는 H⁺는 몇 개일까요?" }
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "산·염기와 중화: 무엇을 세고 무엇으로 나누는가", "part": 3 },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "산과 염기를 같은 부피로 섞으면 항상 중성이 된다.", "answer": false, "why": "두 용액의 단위부피당 H⁺와 OH⁻ 수가 같을 때만 성립해요." },
+          { "text": "중성이 된 용액에는 이온이 하나도 남지 않는다.", "answer": false, "why": "Na⁺·Cl⁻ 같은 구경꾼 이온이 남아요. 예제에서는 전체 이온이 60N개였어요." },
+          { "text": "1 mL당 H⁺ 2N인 산과 1 mL당 OH⁻ 3N인 염기를 중화하려면 부피비는 3:2이다.", "answer": true, "why": "2N × 3 = 3N × 2 = 6N으로 H⁺와 OH⁻ 수가 같아져요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "산·염기의 공통 성질을 이온으로 설명해요" },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "전류가 흐르는 수용액은 산성이다.", "answer": false, "why": "중성 소금물도 이온이 있어 전류가 흘러요. 액성과 전도성은 다른 물음이에요." },
+          { "text": "포도당 분자에 H가 있으므로 포도당 수용액은 산성이다.", "answer": false, "why": "물속에서 실제로 H⁺를 내놓는지가 기준이에요. 식에 H가 있다는 것만으로는 판단하지 않아요." },
+          { "text": "서로 다른 산 수용액이 공통 성질을 보이는 이유는 물속의 H⁺ 때문이다.", "answer": true, "why": "염기의 공통 성질은 OH⁻와 연결해요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "concept", "title": "이온 그림에서 반응 전과 후를 따로 세어요" },
+      "widget": "ions",
+      "title": "반응 전 20개, 반응 후는 몇 개?",
+      "intro": "HCl에서 온 H⁺ 6·Cl⁻ 6, NaOH에서 온 Na⁺ 4·OH⁻ 4를 섞어요. 새로 생긴 물 분자는 이온이 아니에요.",
+      "props": {
+        "h": 6,
+        "oh": 4,
+        "max": 12,
+        "challenge": { "h": 6, "oh": 4, "ask": "total", "prompt": "반응 후 남은 전체 이온 수는 몇 개일까요? (물 분자는 세지 않아요)" }
+      }
+    },
+    {
+      "match": { "stage": "advanced", "title": "반응량과 온도는 같은 물리량이 아니에요" },
+      "widget": "truefalse",
+      "title": "맞으면 O, 틀리면 X",
+      "props": {
+        "statements": [
+          { "text": "반응한 H⁺·OH⁻ 쌍이 많을수록 방출하는 열도 많다(같은 종류의 묽은 산·염기, 단순 모형).", "answer": true, "why": "열의 양은 반응 쌍 수에 비례한다고 비교해요." },
+          { "text": "반응 쌍 수가 더 많으면 혼합 용액의 온도도 반드시 더 높다.", "answer": false, "why": "온도 상승은 그 열을 얼마나 많은 용액이 나누어 받는지에도 달려 있어요. 같은 밀도·비열이라면 ‘반응 쌍 수 ÷ 총부피’로 비교해요." },
+          { "text": "반응 쌍 수 30N인 60 mL 용액은 20N인 20 mL 용액보다 열은 더 많이 내지만, 온도 상승은 더 작을 수 있다.", "answer": true, "why": "30N/60 mL = 0.5N/mL < 20N/20 mL = 1N/mL이에요." }
+        ]
+      }
+    },
+    {
+      "match": { "stage": "advanced", "title": "전체 이온 수는 왜 중화점에서 0이 아닐까요?" },
+      "widget": "ions",
+      "title": "딱 중화점에서 전체 이온 수를 세어 보세요",
+      "intro": "H⁺와 OH⁻가 모두 짝을 이루면 반응 이온은 0이지만 구경꾼 이온은 그대로예요. 전체 이온 수 = a + b + |a − b|.",
+      "props": {
+        "h": 5,
+        "oh": 5,
+        "max": 12,
+        "challenge": { "h": 5, "oh": 5, "ask": "total", "prompt": "H⁺ 5개와 OH⁻ 5개를 섞어 중성이 되었을 때 전체 이온 수는 몇 개일까요?" }
+      }
+    }
+  ]
+}

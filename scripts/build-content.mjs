@@ -5,11 +5,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { enrichUnit } from './enrich.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'content', 'source', '교재');
 const IDX = path.join(ROOT, 'content', 'source', 'index');
 const OUT = path.join(ROOT, 'public', 'content');
+const INTERACTIVES = path.join(ROOT, 'content', 'interactives');
+const activityStats = { authored: 0, auto: 0, textOnly: 0 };
+const FIGURES = JSON.parse(fs.readFileSync(path.join(IDX, 'figures.json'), 'utf8'));
+const figureUse = new Set();
 
 const STAGES = [
   { key: 'prerequisite', label: '선개념', heading: '1. 선개념', kind: 'check' },
@@ -62,7 +67,15 @@ function splitSections(md, level) {
 }
 
 function rewriteImages(md) {
-  return md.replace(/\]\((images\/[^)]+)\)/g, (_, p) => `](/content/${p})`);
+  return md
+    .replace(/<!--\s*FIGURE:(REF-\d+)\s*-->/g, (_, id) => {
+      const f = FIGURES[id];
+      if (!f) throw new Error(`도판 등록표에 없는 그림 ${id}`);
+      figureUse.add(id);
+      // alt = 제목|출처종류|ID → 렌더러가 '교과서/하이탑 원본 이미지 · 재제작 필요' 캡션을 그린다
+      return `![${f.title}|${f.kind}|${id}](/content/images/references/${id}.png)`;
+    })
+    .replace(/\]\((images\/[^)]+)\)/g, (_, p) => `](/content/${p})`);
 }
 
 function parseChoices(block) {
@@ -216,7 +229,20 @@ function toSteps(items, st, unitTitle) {
       });
     }
   }
-  return steps;
+  // 그림만 있는 카드는 다음 카드 앞에 붙인다. 앞뒤 공백도 정리한다.
+  const merged = [];
+  for (let i = 0; i < steps.length; i++) {
+    const sp = steps[i];
+    if (sp.type !== 'question') sp.md = sp.md.trim();
+    const figOnly = sp.type !== 'question' && /^(!\[[^\]]*\]\([^)]*\)\s*)+$/.test(sp.md);
+    const next = steps[i + 1];
+    if (figOnly && next && next.type !== 'question') {
+      next.md = sp.md + '\n\n' + next.md;
+      continue;
+    }
+    merged.push(sp);
+  }
+  return merged;
 }
 
 function parseChapter(cfg, index, prereqIndex) {
@@ -379,6 +405,9 @@ function main() {
   for (const ch of chapters) {
     const units = [];
     for (const u of ch.units) {
+      const st = enrichUnit(u, INTERACTIVES);
+      activityStats.authored += st.authoredCount; activityStats.auto += st.autoCount;
+      for (const sg of u.stages) for (const sp of sg.steps) if (sp.type !== 'question' && !sp.activities) activityStats.textOnly++;
       const { _answers, ...pub } = u;
       if (ch.units[ch.units.length - 1] === u && ch.outro) pub.chapterOutro = ch.outro;
       fs.writeFileSync(path.join(OUT, 'units', `${u.id}.json`), JSON.stringify(pub));
@@ -421,6 +450,8 @@ function main() {
     stats: { standards: index.standards.length, units: allIds.size && chapters.reduce((n, c) => n + c.units.length, 0), questions: totalQ, kiceQuestions: kice.items.length, images: new Set(imgRefs).size },
   };
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  console.log(`figures used: ${figureUse.size}/${Object.keys(FIGURES).length}`);
+  console.log(`activities: authored=${activityStats.authored} auto=${activityStats.auto} textOnly=${activityStats.textOnly}`);
   console.log(`content OK: units=${manifest.stats.units} standards=${manifest.stats.standards} questions=${totalQ} kice=${kice.items.length} images=${manifest.stats.images}`);
 }
 
