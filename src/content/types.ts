@@ -130,6 +130,7 @@ export interface Question {
 }
 
 export interface Unit {
+  conceptJourney?: ConceptJourney;
   pilot?: boolean;
   theme?: { eyebrow: string; mission: string; accent: string };
   notebooks?: NotebookSheet[];
@@ -151,6 +152,31 @@ export interface Unit {
   links: Record<string, { label: string; url: string }[]>;
   answerNotes: string;
   chapterOutro?: string;
+}
+
+export interface ConceptScene {
+  id: string;
+  chapter: string;
+  kind: 'prism' | 'wave' | 'sources' | 'axes' | 'match' | 'inference' | 'atom' | 'cooling' | 'timeline' | 'ratio' | 'origins' | 'transfer';
+  title: string;
+  intro: string;
+  instruction: string;
+  terms: { term: string; meaning: string }[];
+  question: {
+    prompt: string;
+    options: { id: string; text: string; feedback: string }[];
+    answer: string;
+    explanation: string;
+  };
+  takeaway: string;
+  notebookId?: string;
+  videoLessonId?: string;
+}
+
+export interface ConceptJourney {
+  revision: string;
+  title: string;
+  scenes: ConceptScene[];
 }
 
 export interface Answer {

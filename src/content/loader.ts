@@ -3,13 +3,19 @@ import type { AnswerSet, KiceIndex, KiceSolution, Manifest, Unit } from './types
 const cache = new Map<string, Promise<unknown>>();
 
 async function getJson<T>(path: string): Promise<T> {
+  // A development content rebuild must be visible on the next route visit.
+  if (import.meta.env.DEV) {
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`콘텐츠를 불러오지 못했어요 (${response.status}): ${path}`);
+    return response.json();
+  }
   if (!cache.has(path)) {
     cache.set(
       path,
       fetch(path, { cache: 'no-cache' }).then((r) => {
         if (!r.ok) throw new Error(`콘텐츠를 불러오지 못했어요 (${r.status}): ${path}`);
         return r.json();
-      }),
+      }).catch((error) => { cache.delete(path); throw error; }),
     );
   }
   return cache.get(path) as Promise<T>;

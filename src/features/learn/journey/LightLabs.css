@@ -1,0 +1,61 @@
+.jl-lab { --jl-ink: #173b49; --jl-mint: #166c68; --jl-edge: #cddfdc; width: 100%; }
+.jl-lab button, .jl-lab input { font: inherit; }
+.jl-space { position: relative; overflow: hidden; border-radius: 20px; background: radial-gradient(ellipse at 80% 10%, #20334e 0%, #0d1b2e 60%); color: #ecf3ff; padding: 18px 20px 8px; box-shadow: inset 0 0 0 1px #ffffff0c; }
+.jl-space svg { display: block; width: 100%; overflow: visible; }
+.jl-diagram-tag { display: block; color: #b7cce1; font-size: 12px; font-weight: 650; letter-spacing: .03em; margin: 0 0 4px; }
+.jl-svg-label { fill: #dbe8f6; font-size: 20px; font-weight: 600; }
+.jl-svg-value { fill: #ecf4ff; font-size: 19px; font-weight: 650; }
+.jl-svg-tick { fill: #a9bdd4; font-size: 18px; }
+.jl-wave-label { fill: #edf4ff; font-size: 22px; font-weight: 700; }
+.jl-prism-stage { padding-bottom: 0; }
+.jl-control-row { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding-top: 17px; }
+.jl-action { min-height: 48px; padding: 11px 19px; border-radius: 12px; border: 1px solid var(--jl-mint); background: var(--jl-mint); color: white; cursor: pointer; font-weight: 700 !important; box-shadow: 0 3px 0 #104e4c; transition: transform .15s, background .15s; }
+.jl-action:hover:not(:disabled) { background: #0f5b58; transform: translateY(-1px); }
+.jl-action:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 0 #104e4c; }
+.jl-action:disabled { background: #e9f1ef; border-color: #ccded9; color: #476b62; cursor: default; box-shadow: none; }
+.jl-control-hint { font-size: 14px; line-height: 1.65; color: #486371; flex: 1; min-width: 170px; }
+.jl-model-note { margin: 13px 0 0; font-size: 12px; color: #5e727b; line-height: 1.6; word-break: keep-all; }
+.jl-switches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 13px; }
+.jl-switches button { min-height: 46px; display: inline-flex; justify-content: center; align-items: center; gap: 9px; padding: 10px 16px; border-radius: 12px; background: #fff; border: 1px solid var(--jl-edge); color: var(--jl-ink); cursor: pointer; font-size: 14px; font-weight: 650; transition: background .15s, border-color .15s; }
+.jl-switches button:hover { border-color: #649b93; background: #f3f9f7; }
+.jl-switches button[aria-pressed="true"] { background: #e5f3ed; border-color: #368c79; box-shadow: inset 0 0 0 1px #368c79; color: #175546; }
+.jl-visited { font-size: 13px; color: #2b7a64; }
+.jl-lab button:focus-visible, .jl-lab input:focus-visible { outline: 3px solid #dd9e34; outline-offset: 4px; }
+.jl-source-space { padding-bottom: 13px; }
+.jl-source-path { margin-bottom: 9px; }
+.jl-stacked-spectra { padding-top: 17px; padding-bottom: 13px; }
+.jl-stacked-spectra .jl-spectrum + .jl-spectrum, .jl-stacked-spectra .jl-reveal { margin-top: 14px; }
+.jl-observation { display: flex; gap: 12px; align-items: baseline; margin: 13px 0 0; color: #405b66; font-size: 14px; line-height: 1.7; }
+.jl-count { flex-shrink: 0; background: #edf5f1; color: #286e5c; border: 1px solid #d6e6df; border-radius: 30px; font-size: 12px; font-weight: 700; padding: 2px 9px; }
+.jl-guide-key { margin: 8px 0 0; text-align: center; color: #b8c9df; font-size: 12px; line-height: 1.65; }
+.jl-guide-key > span { font-size: 22px; color: #fff; vertical-align: middle; }
+.jl-comparison-placeholder { min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; margin: 12px 20px 4px; color: #a5bed6; border: 1px dashed #4a637f; border-radius: 12px; font-size: 14px; }
+.jl-comparison-placeholder > span:first-child { font-size: 32px; }
+.jl-wave-controls { padding: 17px 0 0; }
+.jl-wave-controls label { display: flex; justify-content: space-between; gap: 14px; font-size: 14px; font-weight: 650; color: #294d58; }
+.jl-wave-controls output { flex-shrink: 0; color: #236f62; font-variant-numeric: tabular-nums; }
+.jl-slider-row { display: flex; align-items: center; gap: 12px; margin: 11px 0 5px; }
+.jl-slider-row button { width: 44px; height: 44px; flex: 0 0 44px; border: 1px solid #c8ddd5; border-radius: 12px; background: #f3f8f5; color: #205d50; font-size: 24px; cursor: pointer; }
+.jl-slider-row button:disabled { opacity: .4; cursor: default; }
+.jl-slider-row input { flex: 1; min-width: 0; min-height: 44px; cursor: pointer; accent-color: #247c68; }
+.jl-range-labels { margin: 0 57px; display: flex; justify-content: space-between; font-size: 11px; color: #668078; }
+.jl-reveal { animation: jl-appear .3s ease-out; }
+@keyframes jl-appear { from { opacity: .15; } to { opacity: 1; } }
+@media (max-width: 600px) {
+  .jl-space { border-radius: 14px; padding: 14px 9px 8px; }
+  .jl-diagram-tag { font-size: 11px; margin-left: 4px; }
+  .jl-svg-label { font-size: 30px; }
+  .jl-prism-stage .jl-svg-label { font-size: 28px; }
+  .jl-svg-value { font-size: 30px; }
+  .jl-svg-tick { font-size: 28px; }
+  .jl-switches { gap: 6px; }
+  .jl-switches button { flex: 1; padding: 9px 10px; font-size: 12px; white-space: nowrap; }
+  .jl-control-row { gap: 12px; }
+  .jl-action { width: 100%; }
+  .jl-control-hint { min-width: 100%; font-size: 13px; }
+  .jl-observation { align-items: flex-start; gap: 8px; font-size: 13px; }
+  .jl-guide-key { font-size: 11px; }
+  .jl-model-note { font-size: 11px; }
+  .jl-wave-controls label { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .jl-reveal { animation: none; } .jl-lab button { transition: none; } }

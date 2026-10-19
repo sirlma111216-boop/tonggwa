@@ -139,7 +139,7 @@ export function Markdown({ md, wide = false, plain = false }: { md: string; wide
   return (
     <div className={`prose${wide ? ' prose-wide' : ''}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
         components={{
           img: Img,
           a: ({ href, children }) => (

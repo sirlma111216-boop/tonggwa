@@ -55,7 +55,7 @@ export function PilotLesson({ unit, step }: { unit: Unit; step: ReadStep }) {
   );
 }
 
-function StructuredNotebook({ unit, sheet }: { unit: Unit; sheet: NotebookSheet }) {
+export function StructuredNotebook({ unit, sheet }: { unit: Unit; sheet: NotebookSheet }) {
   const state = useProgress();
   const check = state?.units[unit.id]?.notebookChecks?.[sheet.id];
   const [openModel, setOpenModel] = useState(false);
@@ -92,7 +92,7 @@ function StructuredNotebook({ unit, sheet }: { unit: Unit; sheet: NotebookSheet 
   );
 }
 
-function VideoCorner({ video }: { video: LessonVideo }) {
+export function VideoCorner({ video }: { video: LessonVideo }) {
   return (
     <section className="pilot-video" aria-label="영상과 더 살펴볼 자료">
       <div className="pilot-video-head"><span className="pilot-corner-icon" aria-hidden="true">▻</span><div><h3>{video.title}</h3><p>{video.duration} · {video.src ? '개념 영상' : '개념 영상 제작 예정'}</p></div></div>
@@ -110,7 +110,7 @@ function VideoCorner({ video }: { video: LessonVideo }) {
 }
 
 export function pilotEvidence(unit: Unit, up?: UnitProgress) {
-  const ids = unit.stages.flatMap((s) => s.steps.flatMap((step) => step.type === 'question' ? [] : (step.activities ?? []).map((a) => a.id!)));
+  const ids = unit.stages.flatMap((s) => s.key === 'concept' && unit.conceptJourney ? unit.conceptJourney.scenes.map((scene) => scene.id) : s.steps.flatMap((step) => step.type === 'question' ? [] : (step.activities ?? []).map((a) => a.id!)));
   const records = ids.map((id) => up?.activities?.[id]).filter((r) => !!r?.done);
   return {
     total: ids.length, tried: records.length,

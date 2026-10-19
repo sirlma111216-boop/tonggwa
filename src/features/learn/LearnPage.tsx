@@ -11,6 +11,7 @@ import { QuestionStep } from './QuestionStep';
 import { TermContext } from './TermContext';
 import { TermPanel } from './TermPanel';
 import { PilotLesson, PilotUnitPanel, TransferReview, pilotEvidence } from './PilotLesson';
+import { ConceptJourneyPlayer } from './journey/ConceptJourneyPlayer';
 
 const STAGE_DESC: Record<StageKey, string> = {
   prerequisite: '이 단원에 필요한 중학교 개념을 짧게 확인해요',
@@ -51,6 +52,7 @@ export function LearnPage() {
   if (stageKey === 'done') return <UnitDone unit={unit} manifest={manifest} />;
   const stage = unit.stages.find((s) => s.key === stageKey);
   if (!stage) return <Navigate to={`/learn/${unitId}`} replace />;
+  if (stage.key === 'concept' && unit.conceptJourney) return <ConceptJourneyPlayer key={`${unit.id}/${unit.conceptJourney.revision}`} unit={unit} journey={unit.conceptJourney} />;
   return <StagePlayer key={`${unit.id}/${stage.key}`} unit={unit} stage={stage} manifest={manifest} />;
 }
 
@@ -59,8 +61,9 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
   const state = useProgress();
   const up = state?.units[unit.id];
   const loc = findUnitInManifest(manifest, unit.id);
-  const firstOpen = unit.stages.find((s) => unitStageStatus(up, s.key) !== 'done') ?? unit.stages[0];
-  const doneCount = unit.stages.filter((s) => unitStageStatus(up, s.key) === 'done').length;
+  const status = (key: StageKey) => key === 'concept' && unit.conceptJourney && unitStageStatus(up, key) === 'done' && unit.conceptJourney.scenes.some(scene => !up?.activities?.[scene.id]?.correct) ? 'in_progress' : unitStageStatus(up, key);
+  const firstOpen = unit.stages.find((s) => status(s.key) !== 'done') ?? unit.stages[0];
+  const doneCount = unit.stages.filter((s) => status(s.key) === 'done').length;
   return (
     <div className="page page-narrow">
       <p className="crumbs">
@@ -80,7 +83,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
       </div>
       <ol className="path">
         {unit.stages.map((s, i) => {
-          const st = unitStageStatus(up, s.key);
+          const st = status(s.key);
           const qn = s.questionIds.length;
           const correct = s.questionIds.filter((id) => up?.answers[id]?.correct === true).length;
           const choiceN = s.questionIds.filter((id) => unit.questions[id].kind === 'choice').length;
@@ -93,7 +96,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
                   <span className="path-desc">{unit.pilot && s.key === 'concept' ? '그림과 활동으로 핵심 개념을 연결해요' : STAGE_DESC[s.key]}</span>
                 </span>
                 <span className="path-meta">
-                  {s.kind === 'check' ? `${qn}문항${st === 'done' && choiceN ? ` · 선택형 ${correct}/${choiceN} 정답` : ''}` : `${s.steps.length}화면`}
+                  {s.kind === 'check' ? `${qn}문항${st === 'done' && choiceN ? ` · 선택형 ${correct}/${choiceN} 정답` : ''}` : `${s.key === 'concept' && unit.conceptJourney ? unit.conceptJourney.scenes.length : s.steps.length}화면`}
                   <br />
                   <span className={`badge ${st === 'done' ? 'badge-done' : st === 'in_progress' ? 'badge-progress' : ''}`}>
                     {st === 'done' ? '완료' : st === 'in_progress' ? '진행 중' : '미학습'}

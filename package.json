@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test:pilot": "npm run content && node scripts/check-pilot-content.mjs && node --test scripts/test-pilot.mjs",
+    "test:concept": "npm run content && node --test scripts/test-concept-journey.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf:dev": "wrangler dev"
   },
