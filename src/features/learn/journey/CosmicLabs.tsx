@@ -38,11 +38,11 @@ function AtomLab({ state, onChange }: CosmicLabProps) {
         {count > 1 && <Particle x={429} y={153} type="e" r={15} />}
       </svg>
       <p className="jc-atom-caption">{count === 0 ? '가운데 모인 입자가 원자핵이에요' : charge === 0 ? '양전하와 음전하가 같아진 중성 원자' : '전하를 띠는 입자 · 이온'}</p>
-      <div className="jc-charge"><span>전체 전하</span><strong>{charge > 0 ? '+' : ''}{charge}</strong><span>+2 − {count}</span></div>
+      <div className="jc-charge" role="status" aria-live="polite"><span>전체 전하</span><strong>{charge > 0 ? '+' : ''}{charge}</strong><span>+2 − {count}</span></div>
     </div>
     <div className="jc-controls jc-electron-controls"><button type="button" disabled={count === 0} onClick={() => update(count - 1)} aria-label="전자 1개 빼기">− 전자 빼기</button><span>전자 <strong>{count}</strong>개</span><button type="button" disabled={count === 2} onClick={() => update(count + 1)}>+ 전자 넣기</button></div>
     <ParticleLegend />
-    <p className="jc-model-note">입자와 전자 분포를 단순화한 모형입니다. 점선은 실제 전자의 이동 경로가 아닙니다.</p>
+    <p className="jc-model-note">양성자 하나의 전하를 +1, 전자 하나를 −1로 세었어요. 입자와 전자 분포를 단순화한 모형이며 점선은 실제 전자의 이동 경로가 아닙니다.</p>
   </div>
 }
 
@@ -73,14 +73,15 @@ function CoolingLab({ state, onChange }: CosmicLabProps) {
     </div>
     <button type="button" className="jc-action" onClick={attempt}>{result ? '한 번 더 결합해 보기' : '결합해 보기'}</button>
     <div className="jc-feedback" aria-live="polite">{result ? temperature === 'hot' ? '서로 끌어당기는 힘은 있어요. 하지만 고에너지 빛이 전자를 다시 떼어 낼 수 있어 중성 원자가 오래 유지되기 어려워요.' : '우주가 식으면 전자를 떼어 내는 고에너지 빛이 줄어, 중성 원자가 안정적으로 유지될 수 있어요.' : '상태를 고르고 결합을 시도해 보세요. 두 환경의 결과를 비교합니다.'}</div>
-    <p className="jc-model-note">많은 입자가 있는 우주의 변화를 수소 한 쌍으로 단순화했습니다. 크기·거리·시간은 실제 비율이 아닙니다.</p>
+    <ParticleLegend />
+    <p className="jc-model-note">많은 입자가 있는 우주의 변화를 수소 한 쌍으로 단순화했습니다. 크기·거리·시간은 실제 비율이 아니며 점선은 실제 전자의 이동 경로가 아닙니다.</p>
   </div>
 }
 
 const events = [
-  { id: 'particles', number: '01', title: '양성자·중성자 등 형성', when: '아주 초기', icon: 'particles' },
-  { id: 'nuclei', number: '02', title: '헬륨 원자핵 등 형성', when: '우주 탄생 후 수 분 무렵', icon: 'nuclei' },
-  { id: 'atoms', number: '03', title: '중성 원자 형성', when: '약 38만 년 무렵', icon: 'atoms' },
+  { id: 'particles', title: '양성자·중성자 등 형성', when: '아주 초기', icon: 'particles', example: '그림: 양성자·중성자 예시' },
+  { id: 'nuclei', title: '헬륨 원자핵 등 형성', when: '우주 탄생 후 수 분 무렵', icon: 'nuclei', example: '그림: 헬륨 원자핵 예시' },
+  { id: 'atoms', title: '중성 원자 형성', when: '약 38만 년 무렵', icon: 'atoms', example: '그림: 수소 원자 예시' },
 ]
 
 function EventIcon({ kind }: { kind: string }) {
@@ -105,14 +106,14 @@ function TimelineLab({ state, onChange }: CosmicLabProps) {
   }
   return <div className="jc-lab jc-timeline">
     <p className="jc-instruction">먼저 일어난 일부터 카드를 눌러 시간 여행을 완성하세요.</p>
-    <div className="jc-event-bank">{[events[2], events[0], events[1]].map(event => <button type="button" key={event.id} disabled={order.includes(event.id)} onClick={() => changeOrder([...order, event.id])}><EventIcon kind={event.icon} /><strong>{event.title}</strong><span>{order.includes(event.id) ? '아래에 놓았어요' : '+ 순서에 놓기'}</span></button>)}</div>
+    <div className="jc-event-bank">{[events[2], events[0], events[1]].map(event => <button type="button" key={event.id} disabled={order.includes(event.id)} onClick={() => changeOrder([...order, event.id])}><EventIcon kind={event.icon} /><strong>{event.title}</strong><small className="jc-event-example">{event.example}</small><span>{order.includes(event.id) ? '아래에 놓았어요' : '+ 순서에 놓기'}</span></button>)}</div>
     <ol className="jc-event-order">{[0, 1, 2].map(index => {
       const event = events.find(item => item.id === order[index])
       return <li key={index} className={event ? 'jc-slot-filled' : ''}><span className="jc-order-number">{index + 1}</span>{event ? <><div className="jc-ordered-event"><strong>{event.title}</strong>{checked && correct && <span>{event.when}</span>}</div><div className="jc-order-controls"><button type="button" disabled={index === 0} aria-label={`${event.title} 앞으로 옮기기`} onClick={() => move(index, -1)}>↑</button><button type="button" disabled={index === order.length - 1} aria-label={`${event.title} 뒤로 옮기기`} onClick={() => move(index, 1)}>↓</button><button type="button" aria-label={`${event.title} 순서에서 빼기`} onClick={() => changeOrder(order.filter((_, itemIndex) => itemIndex !== index))}>×</button></div></> : <span className="jc-slot-empty">{index === 0 ? '가장 먼저 일어난 일' : index === 1 ? '그다음 일어난 일' : '가장 나중에 일어난 일'}</span>}</li>
     })}</ol>
     <button type="button" className="jc-action" disabled={order.length !== 3} onClick={() => onChange({ ...state, order, orderChecked: true, explored: correct })}>순서 확인하기</button>
     <div className={`jc-feedback ${checked && correct ? 'jc-success' : ''}`} aria-live="polite">{checked ? correct ? '맞아요. 수 분 무렵에는 원자핵이, 약 38만 년 무렵에는 전자와 결합한 중성 원자가 만들어졌어요.' : '원자핵을 이루는 입자가 먼저 필요해요. 그리고 중성 원자가 되려면 원자핵과 전자가 결합해야 해요. 순서를 다시 바꿔 보세요.' : '드래그하지 않아도 돼요. 카드를 놓은 뒤 화살표로 순서를 바꿀 수 있어요.'}</div>
-    <p className="jc-model-note">세 칸은 사건의 순서를 나타냅니다. 시간 간격을 같은 비율로 그린 그림이 아닙니다.</p>
+    <p className="jc-model-note">세 칸은 사건의 순서를 나타냅니다. 원자핵 그림은 헬륨, 중성 원자 그림은 수소를 예로 들었어요. 시간 간격을 같은 비율로 그린 그림이 아닙니다.</p>
   </div>
 }
 
@@ -123,13 +124,13 @@ function RatioLab({ state, onChange }: CosmicLabProps) {
   return <div className="jc-lab jc-ratio">
     <div className="jc-controls jc-ratio-tabs" role="group" aria-label="원소를 비교할 기준"><button type="button" aria-pressed={!mass} onClick={() => switchView('count')}>개수로 보기</button><button type="button" aria-pressed={mass} onClick={() => switchView('mass')}>질량으로 보기</button></div>
     <div className="jc-ratio-display">
-      <div className="jc-ratio-pile"><span className="jc-element-label"><i className="jc-dot jc-hydrogen" />수소</span><div className={`jc-hydrogen-grid ${mass ? 'jc-mass-view' : ''}`} aria-label={mass ? '수소 질량 단위 12개' : '수소 원자 12개'}>{Array.from({ length: 12 }, (_, index) => <span key={index}>{mass ? '1' : 'H'}</span>)}</div><strong>{mass ? '12 × 1 = 12' : '12개'}</strong></div>
+      <div className="jc-ratio-pile"><span className="jc-element-label"><i className="jc-dot jc-hydrogen" />수소</span><div className={`jc-hydrogen-grid ${mass ? 'jc-mass-view' : ''}`} role="img" aria-label={mass ? '수소 원자 12개의 총질량: 비교용 질량 단위 12개' : '수소 원자 12개'}>{Array.from({ length: 12 }, (_, index) => <span key={index}>{mass ? '1' : 'H'}</span>)}</div><strong>{mass ? '12 × 1 = 12' : '12개'}</strong></div>
       <span className="jc-ratio-colon">:</span>
-      <div className="jc-ratio-pile"><span className="jc-element-label"><i className="jc-dot jc-helium" />헬륨</span><div className="jc-helium-container">{mass ? <div className="jc-helium-mass" aria-label="헬륨 원자 하나의 질량 단위 4개"><span>1</span><span>1</span><span>1</span><span>1</span></div> : <span className="jc-helium-atom">He</span>}</div><strong>{mass ? '1 × 4 = 4' : '1개'}</strong></div>
+      <div className="jc-ratio-pile"><span className="jc-element-label"><i className="jc-dot jc-helium" />헬륨</span><div className="jc-helium-container" role="img" aria-label={mass ? '헬륨 원자 1개의 총질량: 비교용 질량 단위 4개' : '헬륨 원자 1개'}>{mass ? <div className="jc-helium-mass"><span>1</span><span>1</span><span>1</span><span>1</span></div> : <span className="jc-helium-atom">He</span>}</div><strong>{mass ? '1 × 4 = 4' : '1개'}</strong></div>
     </div>
     <div className="jc-ratio-answer" aria-live="polite"><span>{mass ? '질량의 비' : '원자 수의 비'}</span><strong>{mass ? '12 : 4 = 3 : 1' : '12 : 1'}</strong></div>
     <p className="jc-feedback">{mass ? '헬륨 원자 1개의 질량은 수소 원자 약 4개와 같아요. 원자를 그대로 두고 비교 기준만 바꿨는데, 비가 달라졌어요.' : '수소 원자 12개와 헬륨 원자 1개를 준비했어요. 이번에는 같은 원자들을 질량으로 비교해 보세요.'}</p>
-    <p className="jc-model-note">계산 모형: 수소 원자 질량을 1, 헬륨을 4로 어림했습니다. 도형 크기는 실제 원자 크기를 뜻하지 않습니다.</p>
+    <p className="jc-model-note">계산 모형: 수소 원자 질량을 1, 헬륨을 4로 어림했습니다. 질량 보기의 숫자 칸은 비교용 질량 단위이며, 도형 크기는 실제 원자 크기를 뜻하지 않습니다.</p>
   </div>
 }
 
@@ -147,9 +148,9 @@ function OriginsLab({ state, onChange }: CosmicLabProps) {
       const element = index < 74 ? 'H' : index < 98 ? 'He' : 'other'
       return <i key={index} className={`jc-tile jc-tile-${element} ${focus !== 'all' && focus !== element ? 'jc-dimmed' : ''}`} />
     })}</div><div className="jc-element-filters" role="group" aria-label="강조할 원소 선택">{[{ id: 'H', label: '수소', percent: '약 74%' }, { id: 'He', label: '헬륨', percent: '약 24%' }, { id: 'other', label: '나머지 원소', percent: '약 2%' }].map(element => <button type="button" aria-pressed={focus === element.id} key={element.id} onClick={() => onChange({ ...state, focus: focus === element.id ? 'all' : element.id })}><i className={`jc-dot jc-tile-${element.id}`} /><span>{element.label}</span><strong>{element.percent}</strong></button>)}</div></div>
-    <p className="jc-instruction">이 원소들은 어디에서 왔을까요? 두 장소의 역할을 열어 보세요.</p>
-    <div className="jc-controls jc-origin-tabs" role="group" aria-label="원소가 만들어진 곳"><button type="button" aria-pressed={source === 'early'} onClick={() => selectSource('early')}>초기 우주{seen.includes('early') && ' ✓'}</button><button type="button" aria-pressed={source === 'stars'} onClick={() => selectSource('stars')}>별의 내부{seen.includes('stars') && ' ✓'}</button></div>
-    <div className="jc-origin-result" aria-live="polite">{source === 'early' ? <><span className="jc-origin-symbol">H + He</span><div><strong>우주에 있는 헬륨의 대부분은 초기 우주에서</strong><p>초기 우주에서는 수소와 헬륨 원자핵이 주를 이루었어요. 그때 만들어진 헬륨이 오늘날 우주 헬륨의 대부분을 차지해요.</p></div></> : source === 'stars' ? <><span className="jc-origin-symbol jc-star-symbol">★</span><div><strong>별의 내부에서도 헬륨이 만들어져요</strong><p>별 내부의 수소 핵융합은 헬륨을 만들어요. 하지만 ‘별에서도 만들어진다’가 ‘대부분 별에서 만들어졌다’는 뜻은 아니에요.</p></div></> : <p>위의 장소를 누르면 그곳에서 만들어지는 원소를 볼 수 있어요.</p>}</div>
+    <p className="jc-instruction">헬륨은 어디에서 왔을까요? 두 생성 환경의 역할을 열어 보세요.</p>
+    <div className="jc-controls jc-origin-tabs" role="group" aria-label="헬륨이 만들어진 환경"><button type="button" aria-pressed={source === 'early'} onClick={() => selectSource('early')}>초기 우주{seen.includes('early') && ' ✓'}</button><button type="button" aria-pressed={source === 'stars'} onClick={() => selectSource('stars')}>별의 내부{seen.includes('stars') && ' ✓'}</button></div>
+    <div className="jc-origin-result" aria-live="polite">{source === 'early' ? <><span className="jc-origin-symbol">H · He</span><div><strong>우주에 있는 헬륨의 대부분은 초기 우주에서</strong><p>초기 우주에서는 수소와 헬륨 원자핵이 주를 이루었어요. 그때 만들어진 헬륨이 오늘날 우주 헬륨의 대부분을 차지해요.</p></div></> : source === 'stars' ? <><span className="jc-origin-symbol jc-star-symbol">★</span><div><strong>별의 내부에서도 헬륨이 만들어져요</strong><p>별 내부의 수소 핵융합은 헬륨을 만들어요. 하지만 ‘별에서도 만들어진다’가 ‘대부분 별에서 만들어졌다’는 뜻은 아니에요.</p></div></> : <p>위의 환경을 누르면 헬륨이 만들어지는 두 과정을 비교할 수 있어요.</p>}</div>
     <p className="jc-model-note">대표적인 현재 우주 원소 질량비의 근삿값입니다. 조사 대상·모형에 따라 달라지며, 암흑 물질과 암흑 에너지는 포함하지 않습니다.</p>
   </div>
 }

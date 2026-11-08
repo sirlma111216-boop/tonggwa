@@ -36,6 +36,17 @@
 .workbook-correction .workbook-writing { margin-left: 0; margin-right: 0; }
 .workbook-after { margin-top: 17px; }
 .workbook-sheet-footer { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #b9c6cc; padding-top: 11px; margin-top: auto; color: #65727d; font-size: 9px; }
+.workbook-model { padding: 12px 13px; flex: 1; min-width: 0; }
+.workbook-model p { color: #202d3a; white-space: pre-line; font-size: 12px; line-height: 1.7; }
+.workbook-spectrum { display: block; width: 100%; max-width: 220px; margin: 0 auto 12px; }
+.workbook-spectrum text { font: 9px 'Pretendard', sans-serif; fill: #53646e; }
+.workbook-teacher-check { margin-top: 18px; }
+.workbook-teacher-check h3, .workbook-teacher-guidance h3 { margin: 0 0 6px; font-size: 13px; }
+.workbook-teacher-check ul, .workbook-teacher-guidance ul { margin: 0; padding-left: 18px; line-height: 1.6; }
+.workbook-teacher-guidance { margin: 16px 0 18px; padding: 12px 13px; border: 1px solid #b9c6cc; background: #f7f9f9; font-size: 11px; }
+.workbook-teacher-guidance p { margin-top: 8px; }
+.workbook-teacher .workbook-structure { min-height: 125mm; }
+.workbook-teacher.workbook-sequence .workbook-model, .workbook-teacher.workbook-causal .workbook-model { padding-top: 0; }
 @media screen and (max-width: 850px) {
   .workbook-page { padding: 20px 12px; }
   .workbook-sheet { width: 100%; min-height: 1000px; padding: 24px; }
@@ -46,6 +57,13 @@
   .workbook-compare .workbook-field-prompt { min-height: 158px; padding: 10px 8px; }
   .workbook-data .workbook-field-prompt { width: 39%; }
   .workbook-sheet-footer { margin-top: 24px; }
+}
+@media screen and (max-width: 560px) {
+  .workbook-teacher.workbook-compare .workbook-structure { grid-template-columns: 1fr; }
+  .workbook-teacher.workbook-compare .workbook-field + .workbook-field { border-left: 1px solid #b9c6cc; border-top: none; }
+  .workbook-teacher.workbook-compare .workbook-field-prompt { min-height: 0; }
+  .workbook-teacher.workbook-data .workbook-field { flex-direction: column; }
+  .workbook-teacher.workbook-data .workbook-field-prompt { width: auto; border-right: none; border-bottom: 1px solid #b9c6cc; }
 }
 @media print {
   @page { size: A4; margin: 0; }
@@ -59,4 +77,12 @@
   .workbook-unit { margin-top: 16px !important; }
   .workbook-before { margin-top: 18px; }
   .workbook-correction { min-height: 33mm; margin-top: 18px; }
+  .workbook-teacher .workbook-structure { min-height: 106mm; }
+  .workbook-teacher .workbook-field-prompt { padding: 8px 11px 6px; }
+  .workbook-teacher.workbook-compare .workbook-field-prompt { min-height: 90px; }
+  .workbook-teacher .workbook-model { padding: 8px 11px; }
+  .workbook-teacher.workbook-sequence .workbook-model, .workbook-teacher.workbook-causal .workbook-model { padding-top: 0; }
+  .workbook-teacher .workbook-model p { font-size: 11px; line-height: 1.55; }
+  .workbook-teacher-check { margin-top: 14px; font-size: 11px; }
+  .workbook-teacher-guidance { margin: 12px 0 14px; font-size: 10.5px; }
 }

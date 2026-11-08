@@ -22,7 +22,22 @@
 .jl-visited { font-size: 13px; color: #2b7a64; }
 .jl-lab button:focus-visible, .jl-lab input:focus-visible { outline: 3px solid #dd9e34; outline-offset: 4px; }
 .jl-source-space { padding-bottom: 13px; }
-.jl-source-path { margin-bottom: 9px; }
+.jl-apparatus { margin: 10px 0 14px; }
+.jl-apparatus img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; border-radius: 12px; background: #0a1325; }
+.jl-apparatus figcaption { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; color: #e1edfa; font-size: 13px; font-weight: 650; padding: 10px 4px 0; }
+.jl-flow-arrow { margin-right: 10px; color: #d7be8d; }
+.jl-apparatus-description { margin: 8px 4px 14px; color: #d3e0ee; font-size: 14px; line-height: 1.7; word-break: keep-all; }
+.jl-result-label { margin: 16px 4px 5px; padding-top: 13px; border-top: 1px solid #ffffff24; color: #9dc7d9; font-size: 12px; font-weight: 650; }
+.jl-measurement { padding-bottom: 12px; }
+.jl-measurement-heading > span { color: #acc8dd; font-size: 12px; font-weight: 650; }
+.jl-measurement-heading h3 { margin: 7px 0; color: #f5f9ff; font-size: 19px; line-height: 1.45; }
+.jl-measurement-heading p { margin: 0 0 14px; color: #c4d5e6; font-size: 14px; line-height: 1.7; word-break: keep-all; }
+.jl-measurement-bridge { margin: 14px 0; text-align: center; color: #56716c; font-size: 14px; line-height: 1.7; }
+.jl-measurement-bridge strong { color: #215e57; font-weight: 700; }
+.jl-gas-switches button { background: #192f43; border-color: #587187; color: #e1eaf4; }
+.jl-gas-switches button:hover { color: #175546; }
+.jl-gas-switches button .jl-visited { color: #b3dacb; }
+.jl-gas-switches button[aria-pressed="true"] .jl-visited { color: #2b7a64; }
 .jl-stacked-spectra { padding-top: 17px; padding-bottom: 13px; }
 .jl-stacked-spectra .jl-spectrum + .jl-spectrum, .jl-stacked-spectra .jl-reveal { margin-top: 14px; }
 .jl-observation { display: flex; gap: 12px; align-items: baseline; margin: 13px 0 0; color: #405b66; font-size: 14px; line-height: 1.7; }
@@ -56,6 +71,11 @@
   .jl-observation { align-items: flex-start; gap: 8px; font-size: 13px; }
   .jl-guide-key { font-size: 11px; }
   .jl-model-note { font-size: 11px; }
+  .jl-apparatus figcaption { font-size: 11px; gap: 6px; }
+  .jl-flow-arrow { margin-right: 6px; }
+  .jl-apparatus-description, .jl-measurement-heading p { font-size: 13px; }
+  .jl-measurement-heading h3 { font-size: 17px; }
+  .jl-gas-switches button { padding: 9px 7px; }
   .jl-wave-controls label { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .jl-reveal { animation: none; } .jl-lab button { transition: none; } }

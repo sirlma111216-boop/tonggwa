@@ -68,6 +68,7 @@ export function StructuredNotebook({ unit, sheet }: { unit: Unit; sheet: Noteboo
         <div className="row">
           <Link className="btn" to={`/workbook/${unit.id}`} target="_blank" rel="noopener noreferrer">필기장 보기 · 인쇄 ↗</Link>
           <a className="btn btn-text" href={`/workbooks/${unit.id}-notebook.pdf#page=${page}`} target="_blank" rel="noopener noreferrer">PDF {page}쪽 ↗</a>
+          {unit.id === 'unit-1-1' && <Link className="btn btn-text" to={`/workbook/${unit.id}?view=teacher#sheet-${sheet.id}`} target="_blank" rel="noopener noreferrer">교사용 답안 보기 ↗</Link>}
         </div>
         <ul className="pilot-note-prompts">{sheet.sections.map((s) => <li key={s.label}><strong>{s.label}</strong><span>{s.prompt}</span></li>)}</ul>
         <p className="small muted">이번에 배운 부분부터 채우고, 아직 배우지 않은 칸은 이어서 채워도 좋아요. 모범 답을 그대로 옮기기 전에 한 번 떠올려 보세요.</p>

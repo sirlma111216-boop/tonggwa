@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { enrichUnit } from './enrich.mjs';
 import { attachConceptJourney } from './concept-journey.mjs';
+import { attachQuestionMedia } from './question-media.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'content', 'source', '교재');
@@ -408,6 +409,7 @@ function main() {
     for (const u of ch.units) {
       const st = enrichUnit(u, INTERACTIVES);
       attachConceptJourney(u, path.join(INTERACTIVES, '..', 'lessons'));
+      attachQuestionMedia(u, path.join(INTERACTIVES, '..', 'lessons'), path.join(ROOT, 'public'));
       activityStats.authored += st.authoredCount; activityStats.auto += st.autoCount;
       for (const sg of u.stages) for (const sp of sg.steps) if (sp.type !== 'question' && !sp.activities) activityStats.textOnly++;
       const { _answers, ...pub } = u;

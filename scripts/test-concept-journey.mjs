@@ -9,7 +9,9 @@ import ts from 'typescript';
 import { createServer } from 'vite';
 
 const require = createRequire(import.meta.url);
-const journey = JSON.parse(await fs.readFile(new URL('../content/lessons/unit-1-1-concept.json', import.meta.url), 'utf8'));
+const authoredJourney = JSON.parse(await fs.readFile(new URL('../content/lessons/unit-1-1-concept.json', import.meta.url), 'utf8'));
+const videos = JSON.parse(await fs.readFile(new URL('../content/lessons/unit-1-1-videos.json', import.meta.url), 'utf8'));
+const journey = { ...authoredJourney, scenes: authoredJourney.scenes.map(scene => ({ ...scene, video: videos[scene.kind] })) };
 const unit = JSON.parse(await fs.readFile(new URL('../public/content/units/unit-1-1.json', import.meta.url), 'utf8'));
 const sceneOf = (kind) => journey.scenes.find(scene => scene.kind === kind);
 const escapeHtml = (value) => renderToStaticMarkup(React.createElement('span', {}, value)).replace(/^<span>|<\/span>$/g, '');
@@ -79,14 +81,15 @@ test('12장면의 배포 콘텐츠·노트·영상 참조가 실제 자료와 �
   assert.equal(new Set(journey.scenes.map(scene => scene.id)).size, 12);
   assert.deepEqual(unit.conceptJourney, journey, 'Run npm run content: served JSON does not match authored journey');
   const notes = new Map(unit.notebooks.map(note => [note.id, note]));
-  const lessons = unit.stages.flatMap(stage => stage.steps).filter(step => step.lesson).map(step => step.lesson);
+  assert.deepEqual(Object.keys(videos).sort(), journey.scenes.map(scene => scene.kind).sort(), 'Every scene needs its own matching video brief');
   const usedNotes = new Set();
   for (const scene of journey.scenes) {
     assert.ok(scene.question.options.some(option => option.id === scene.question.answer), scene.id);
     assert.equal(new Set(scene.question.options.map(option => option.id)).size, scene.question.options.length, scene.id);
     assert.ok(scene.question.options.every(option => option.feedback.trim()), `${scene.id}: missing targeted feedback`);
     assert.ok(scene.terms.length && scene.terms.every(term => term.term && term.meaning), scene.id);
-    assert.ok(lessons.find(lesson => lesson.id === scene.videoLessonId)?.video?.brief, `${scene.id}: video reference`);
+    assert.ok(scene.video?.brief && scene.video.scenes.length && scene.video.sources.length, `${scene.id}: dedicated video brief`);
+    assert.deepEqual(unit.conceptJourney.scenes.find(item => item.id === scene.id)?.video, videos[scene.kind], `${scene.id}: served video must override legacy lesson reference`);
     if (scene.notebookId) {
       const note = notes.get(scene.notebookId);
       assert.ok(note?.sections.length && note.modelSections?.length, `${scene.id}: structured notebook reference`);
@@ -94,6 +97,12 @@ test('12장면의 배포 콘텐츠·노트·영상 참조가 실제 자료와 �
     }
   }
   assert.equal(usedNotes.size, 5, 'All five printed notebook pages should have a learning checkpoint');
+  const spectrumModel = notes.get('u11-n1').modelSections.map(section => section.content).join('\n');
+  assert.match(spectrumModel, /430.*610/s, 'The model notebook must use the wavelengths students just observed');
+  assert.doesNotMatch(spectrumModel, /440|590/, 'Do not silently substitute the later transfer example');
+  const ratioModel = notes.get('u11-n4').modelSections.map(section => section.content).join('\n');
+  assert.match(ratioModel, /질량비[^\n]*3\s*:\s*1/, 'The notebook must preserve the lesson mass ratio');
+  assert.match(ratioModel, /(?:원자 수 비|개수비)[^\n]*12\s*:\s*1/, 'The notebook must preserve the lesson atom count ratio');
   await fs.access(new URL('../public/workbooks/unit-1-1-notebook.pdf', import.meta.url));
   for (const entry of Object.values(unit.glossary)) {
     for (const reference of [entry.definedAt, ...entry.mentions]) {
@@ -131,7 +140,7 @@ test('빛 실험은 실제 조작과 서로 다른 자료 비교 이후 질문�
   assert.equal(sources.state.explored, false);
   sources.click('뜨거운 기체');
   assert.equal(sources.state.explored, false, 'Repeated clicks must not count as a new source');
-  sources.click('연속광 + 차가운 기체');
+  sources.click('전구 빛 + 기체');
   assert.equal(sources.state.explored, true);
   assert.ok(sources.html().includes('흡수 스펙트럼'));
 
@@ -152,16 +161,76 @@ test('빛 실험은 실제 조작과 서로 다른 자료 비교 이후 질문�
   assert.equal(match.state.explored, true);
 
   const inference = labHarness('inference');
-  assert.ok(!inference.html().includes('관측 ② · 조건 나'));
-  inference.click('다른 관측 조건의 자료 열기');
+  assert.ok(!inference.nodes().some(node => node.type === 'svg' && node.props['aria-label']?.startsWith('관측 ②')));
+  inference.click('감도가 낮은 장치로 측정하기');
   assert.equal(inference.state.explored, true);
-  assert.ok(inference.html().includes('관측 ② · 조건 나'));
+  assert.equal(inference.state.detectorCompared, true);
+  assert.ok(inference.nodes().some(node => node.type === 'svg' && node.props['aria-label']?.startsWith('관측 ②')));
 
   const transfer = labHarness('transfer');
   transfer.click('원소 D');
   assert.equal(transfer.state.explored, false);
   transfer.click('원소 E');
   assert.equal(transfer.state.explored, true);
+});
+
+test('세 광원은 실제 삽화 파일과 형성 상황을 보여 주며 기존 용어를 노출하지 않는다', async () => {
+  const cases = [
+    ['continuous', '백열 전구', '연속 스펙트럼'],
+    ['emission', '기체 방전관', '방출 스펙트럼'],
+    ['absorption', '기체층', '흡수 스펙트럼'],
+  ];
+  for (const [source, apparatus, result] of cases) {
+    const lab = labHarness('sources', { source });
+    const images = lab.nodes().filter(node => node.type === 'img');
+    assert.equal(images.length, 1);
+    assert.equal(images[0].props.src, `/images/authored/spectra/${source}-v1.png`);
+    assert.ok(images[0].props.alt.length > 15, `${source}: apparatus needs a meaningful description`);
+    const bytes = await fs.readFile(new URL(`../public${images[0].props.src}`, import.meta.url));
+    assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `${source}: missing or invalid PNG`);
+    const html = lab.html();
+    assert.ok(html.includes(apparatus) && html.includes(result), source);
+    assert.ok(!html.includes('연속광'), source);
+    const spectrum = lab.nodes().find(node => node.type === 'svg' && node.props.className === 'jl-spectrum');
+    assert.ok(spectrum.props['aria-label'].includes(source === 'continuous' ? '파장이 연속적으로 이어집니다' : '선의 위치 430, 610 나노미터'));
+  }
+});
+
+test('원소 비교는 별빛 관측 다음 실험실 기체 측정을 보여 주고 선택한 기체만 바꾼다', async () => {
+  const lab = labHarness('match');
+  const measurements = () => lab.nodes().filter(node => node.type === 'section' && node.props['aria-label']);
+  assert.deepEqual(measurements().map(node => node.props['aria-label']), ['별에서 온 빛의 측정', '원소 기체에서 나온 빛의 측정']);
+  const imageIn = section => [...elements(section)].find(node => node.type === 'img');
+  const starImage = imageIn(measurements()[0]);
+  assert.equal(starImage.props.src, '/images/authored/spectra/star-v1.png');
+  const bytes = await fs.readFile(new URL(`../public${starImage.props.src}`, import.meta.url));
+  assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  const stellarSpectrum = renderToStaticMarkup(measurements()[0]);
+  for (const [candidate, wavelengths] of [['A', [430, 610]], ['B', [430, 550]], ['C', [470, 610]]]) {
+    lab.click(`원소 ${candidate} 기체`);
+    assert.equal(renderToStaticMarkup(measurements()[0]).replace(/id="[^"]+"|url\(#[^)]+\)/g, ''), stellarSpectrum.replace(/id="[^"]+"|url\(#[^)]+\)/g, ''), 'Changing reference gas must not change the observed star');
+    const gasSection = measurements()[1];
+    assert.ok(imageIn(gasSection).props.alt.includes(`원소 ${candidate} 기체`));
+    assert.ok(renderToStaticMarkup(gasSection).includes(`선의 위치 ${wavelengths.join(', ')} 나노미터`));
+  }
+});
+
+test('검출 비교는 선폭을 바꾸지 않으며 약한 550 nm 선의 미검출을 질문한다', () => {
+  const lab = labHarness('inference');
+  lab.click('감도가 낮은 장치로 측정하기');
+  const spectra = lab.nodes().filter(node => node.type === 'svg' && node.props.className === 'jl-spectrum');
+  assert.equal(spectra.length, 2);
+  const lineMarks = svg => [...elements(svg)].filter(node => node.type === 'line' && node.props.y1 === '36' && node.props.y2 === '76').map(node => node.props);
+  const [first, second] = spectra.map(lineMarks);
+  assert.equal(first.length, 3);
+  assert.equal(second.length, 2);
+  assert.equal(new Set([...first, ...second].map(line => line.strokeWidth)).size, 1, 'Do not imply an unmodeled change in physical line width');
+  assert.ok(first[1].opacity < first[0].opacity && first[1].opacity < first[2].opacity, '550 nm must already be weaker in the first observation');
+  assert.deepEqual(second.map(({ x1, x2, strokeWidth, opacity }) => ({ x1, x2, strokeWidth, opacity })), [first[0], first[2]].map(({ x1, x2, strokeWidth, opacity }) => ({ x1, x2, strokeWidth, opacity })), '430/610 nm must remain at the same positions and appearance');
+  const scene = sceneOf('inference');
+  assert.equal(scene.id, 'u11-c2-detection', 'A new question must not reuse the previous abundance-answer record');
+  assert.match(scene.question.prompt, /550 nm.*보이지 않는 까닭/);
+  assert.match(scene.question.options.find(option => option.id === scene.question.answer).text, /550 nm.*약한 빛.*구별하지 못/);
 });
 
 test('모형의 실제 수치와 질문의 정답이 같은 자료를 설명한다', () => {
@@ -203,6 +272,8 @@ test('헬륨은 전자 2개에서만 처음 완료되며 고온·저온 실험�
   assert.equal((neutral.match(/>n⁰<\/text>/g) ?? []).length, 2);
   assert.equal((neutral.match(/>e⁻<\/text>/g) ?? []).length, 2);
   assert.ok(neutral.includes('전체 전하 0'));
+  const chargeStatus = atom.nodes().find(node => node.props.className === 'jc-charge');
+  assert.equal(chargeStatus.props.role, 'status', 'Electron changes must announce the resulting charge');
 
   const cooling = labHarness('cooling');
   cooling.click('충분히 식었을 때');
@@ -226,6 +297,8 @@ test('연대표는 오답 순서로 완료되지 않으며 수정한 순서를 �
   const atomImage = renderToStaticMarkup(atomCard);
   assert.equal((atomImage.match(/>p⁺<\/text>/g) ?? []).length, 1, '380,000-year icon should represent neutral hydrogen');
   assert.equal((atomImage.match(/>e⁻<\/text>/g) ?? []).length, 1);
+  assert.ok(atomImage.includes('수소 원자 예시'));
+  assert.ok(renderToStaticMarkup(timeline.button('헬륨 원자핵 등 형성')).includes('헬륨 원자핵 예시'), 'Different representative nuclei/atoms must be explicitly identified');
   assert.equal(timeline.button('순서 확인하기').props.disabled, true);
   timeline.click('중성 원자 형성');
   timeline.click('양성자·중성자 등 형성');
@@ -245,10 +318,12 @@ test('연대표는 오답 순서로 완료되지 않으며 수정한 순서를 �
 
 test('질량 전환과 두 생성 장소를 관찰해야 완료되며 저장 상태를 복원할 수 있다', () => {
   const ratio = labHarness('ratio');
+  assert.deepEqual(ratio.nodes().filter(node => node.props.role === 'img').map(node => node.props['aria-label']), ['수소 원자 12개', '헬륨 원자 1개']);
   ratio.click('개수로 보기');
   assert.equal(ratio.state.explored, false);
   ratio.click('질량으로 보기');
   assert.equal(ratio.state.explored, true);
+  assert.deepEqual(ratio.nodes().filter(node => node.props.role === 'img').map(node => node.props['aria-label']), ['수소 원자 12개의 총질량: 비교용 질량 단위 12개', '헬륨 원자 1개의 총질량: 비교용 질량 단위 4개']);
   const restored = labHarness('ratio', JSON.parse(JSON.stringify(ratio.state)));
   assert.equal(restored.state.explored, true);
   assert.ok(restored.html().includes('12 : 4 = 3 : 1'));
@@ -306,6 +381,9 @@ test('플레이어는 12장면 모두 관찰→판단→해설 순서를 지키�
       assert.equal(corrected.includes('cj-notebook-stop'), !!scene.notebookId, `${scene.id}: notebook checkpoint`);
       assert.ok(!corrected.includes('FIGURE:') && !corrected.includes('<del>'), scene.id);
     }
+    stored = { version: 1, uid: 'isolated-ssr-test', units: { [unit.id]: { stages: {}, answers: {}, activityDrafts: { 'u11-c2-inference': { lab: { comparisonRevealed: true, explored: true }, choice: 'presence', submitted: true } }, activities: { 'u11-c2-inference': { done: true, correct: true, firstCorrect: true, points: 10 } } } }, exams: {} };
+    const replacement = render(`scene=${sceneOf('inference').id}`);
+    assert.ok(replacement.includes('cj-observe-first') && !replacement.includes('role="radiogroup"'), 'Old abundance answers must not complete the new detector observation');
     stored = null;
     for (const query of ['s=0.5', 's=not-a-number', 's=-9', 's=999', 's=Infinity', 'scene=unknown']) {
       assert.doesNotThrow(() => render(query), `Invalid preview index should not crash: ${query}`);
@@ -326,6 +404,43 @@ test('과학의 물결표 범위는 취소선으로 바뀌지 않고 명시적�
       const intentional = renderToStaticMarkup(React.createElement(Markdown, { md: '~~삭제~~', plain }));
       assert.ok(intentional.includes('<del>삭제</del>'), `Intentional strikethrough stopped working (plain=${plain})`);
     }
+  } finally {
+    await server.close();
+  }
+});
+
+test('평가 삽화는 필요한 문항에만 연결되며 선택지 앞에 보이고 정답 해설을 노출하지 않는다', async () => {
+  const catalog = JSON.parse(await fs.readFile(new URL('../content/lessons/unit-1-1-question-media.json', import.meta.url), 'utf8'));
+  for (const id of ['T1-02-01-C1', 'T1-02-01-C2', 'T1-02-01-A1']) assert.ok(catalog[id]?.length, `${id}: the requested observation illustration is missing`);
+  const server = await createServer({ server: { middlewareMode: true, watch: null }, cacheDir: 'node_modules/.vite-question-media-check', logLevel: 'error' });
+  try {
+    const { QuestionStep } = await server.ssrLoadModule('/src/features/learn/QuestionStep.tsx');
+    for (const [id, media] of Object.entries(catalog)) {
+      const question = unit.questions[id];
+      assert.deepEqual(question.media, media, `${id}: authored and served media differ`);
+      for (const image of media) {
+        assert.deepEqual(Object.keys(image).sort(), ['alt', 'caption', 'src'], 'Assessment illustrations must not carry answer fields');
+        assert.match(image.src, /^\/images\/.*\.(?:png|jpe?g|webp|avif)$/i);
+        assert.ok((await fs.stat(new URL(`../public${image.src}`, import.meta.url))).isFile(), image.src);
+      }
+      const hiddenExplanation = '제출 후에만 보여야 하는 검사 전용 해설';
+      const html = renderToStaticMarkup(React.createElement(QuestionStep, {
+        question, number: 1, total: 3,
+        answer: { key: '⑤', choiceIndex: 4, explanation: hiddenExplanation },
+        onCheck() { assert.fail('render submitted an answer'); },
+        onSelfMark() { assert.fail('render changed a record'); }, bind() {},
+      }));
+      assert.equal((html.match(/class="question-media-card"/g) ?? []).length, media.length, id);
+      assert.equal((html.match(/type="radio"/g) ?? []).length, 5, `${id}: imagery must not replace the five choices`);
+      assert.ok(html.indexOf('class="question-media') < html.indexOf('role="radiogroup"'), `${id}: show observation imagery before the choices`);
+      assert.ok(!html.includes(hiddenExplanation) && !html.includes('feedback-head'), `${id}: illustration must not reveal answer feedback`);
+      for (const image of media) assert.ok(html.includes(escapeHtml(image.caption)), `${id}: missing observation caption`);
+    }
+    for (const question of Object.values(unit.questions)) {
+      if (!catalog[question.id]) assert.equal(question.media, undefined, `${question.id}: unrequested illustration attached`);
+    }
+    const otherUnit = JSON.parse(await fs.readFile(new URL('../public/content/units/unit-1-2.json', import.meta.url), 'utf8'));
+    assert.ok(Object.values(otherUnit.questions).every(question => !question.media), 'The first-unit catalog must not affect another unit');
   } finally {
     await server.close();
   }

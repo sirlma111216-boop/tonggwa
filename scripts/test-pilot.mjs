@@ -76,9 +76,133 @@ test('모든 탐구 화면을 렌더링하며 제출 전 해설·모범 필기�
         }
       }
     }
-    assert.equal(cards, 30);
-    assert.equal(activities, 31);
+    assert.equal(cards, 29); // unit-1-1 선개념은 두 개의 쉬운 선택형 문항으로 바로 마무리한다.
+    assert.equal(activities, 30);
   } finally {
     await server.close();
   }
+});
+
+test('첫 선개념은 짧은 설명과 5지선다이며 예전 서술 답안으로 잠기거나 완료되지 않는다', async () => {
+  const unit = JSON.parse(await fs.readFile('public/content/units/unit-1-1.json', 'utf8'));
+  const answers = JSON.parse(await fs.readFile('public/content/answers/unit-1-1.json', 'utf8'));
+  const stage = unit.stages.find(s => s.key === 'prerequisite');
+  assert.deepEqual(stage.steps, [{ type: 'question', id: 'T1-02-01-P1' }, { type: 'question', id: 'T1-02-01-P2' }]);
+  const server = await createServer({ server: { middlewareMode: true, watch: null }, cacheDir: 'node_modules/.vite-prerequisite-check', logLevel: 'error' });
+  try {
+    const { QuestionStep } = await server.ssrLoadModule('/src/features/learn/QuestionStep.tsx');
+    const { currentAnswerRecord, firstUnansweredQuestionStep } = await server.ssrLoadModule('/src/features/learn/answerRecord.ts');
+    const old = { value: '원자핵입니다. 전자는 밖에 있어요.', submittedAt: 'old', correct: null, selfMark: 'ok' };
+    const snapshot = JSON.stringify(old);
+    const records = Object.fromEntries(stage.questionIds.map(id => [id, old]));
+    assert.equal(firstUnansweredQuestionStep(unit, stage, records), 0, 'old written answers must not complete the revised stage');
+    for (const [i, id] of stage.questionIds.entries()) {
+      const q = unit.questions[id];
+      const answer = answers[id];
+      assert.equal(q.kind, 'choice');
+      assert.equal(q.choices.length, 5);
+      assert.equal(new Set(q.choices).size, 5);
+      assert.equal(answer.choiceIndex, [1, 3][i]);
+      assert.match(q.prompt, /^\*\*개념 한 입\.\*\*/);
+      assert.equal(q.prompt.split('\n\n').length, 2, 'one brief concept and one simple question share the screen');
+      assert.ok(q.prompt.length < 220);
+      assert.doesNotMatch(q.prompt, /이유를 쓰|서술하|근거를 쓰/);
+      const render = record => renderToStaticMarkup(React.createElement(QuestionStep, {
+        question: q, number: i + 1, total: 2, record, answer,
+        onCheck() { assert.fail('render submitted an answer'); },
+        onSelfMark() { assert.fail('render changed an old answer'); }, bind() {},
+      }));
+      for (const record of [undefined, old, { ...old, value: 5, correct: false }, { ...old, value: 1.5, correct: true }]) {
+        const html = render(record);
+        assert.equal((html.match(/type="radio"/g) || []).length, 5);
+        assert.ok(html.includes('callout note') && html.includes('개념 한 입'));
+        assert.doesNotMatch(html, /<textarea|disabled=""|self-mark-wrap|feedback-head/, 'fresh and incompatible records must allow a new choice without old feedback');
+      }
+      const current = { value: answer.choiceIndex, submittedAt: 'new', correct: true };
+      assert.equal(currentAnswerRecord(q, current), current);
+      assert.equal(currentAnswerRecord(q, old), undefined);
+      const restored = render(current);
+      assert.equal((restored.match(/disabled=""/g) || []).length, 5, 'a valid submitted choice is restored');
+      assert.match(restored, /정답이에요/);
+      assert.doesNotMatch(restored, /self-mark-wrap/);
+      records[id] = current;
+      assert.equal(firstUnansweredQuestionStep(unit, stage, records), i === 0 ? 1 : -1);
+    }
+    assert.equal(JSON.stringify(old), snapshot, 'compatibility checks preserve previous written responses');
+  } finally {
+    await server.close();
+  }
+});
+
+test('첫 단원 평가는 9개 모두 5지선다이며 개념·심화의 옛 서술 기록을 새 응답으로 세지 않는다', async () => {
+  const unit = JSON.parse(await fs.readFile('public/content/units/unit-1-1.json', 'utf8'));
+  const answers = JSON.parse(await fs.readFile('public/content/answers/unit-1-1.json', 'utf8'));
+  const expected = { P1: 1, P2: 3, C1: 2, C2: 4, C3: 0, A1: 1, A2: 3, S1: 0, S2: 2 };
+  assert.equal(Object.keys(unit.questions).length, 9);
+  for (const [suffix, index] of Object.entries(expected)) {
+    const id = `T1-02-01-${suffix}`;
+    const q = unit.questions[id];
+    assert.equal(q.kind, 'choice', id);
+    assert.equal(q.choices.length, 5, id);
+    assert.equal(new Set(q.choices).size, 5, id);
+    assert.equal(answers[id].choiceIndex, index, id);
+    assert.doesNotMatch(q.prompt, /서술하시오|근거를 쓰시오|배열하시오|구하시오/, id);
+  }
+  for (const suffix of ['C1', 'C2', 'C3', 'A1', 'A2']) {
+    assert.match(unit.questions[`T1-02-01-${suffix}`].prompt, /\|---/, `${suffix}: observation and conditions must remain a readable data table`);
+  }
+  const server = await createServer({ server: { middlewareMode: true, watch: null }, cacheDir: 'node_modules/.vite-unit-assessment-check', logLevel: 'error' });
+  try {
+    const { QuestionStep } = await server.ssrLoadModule('/src/features/learn/QuestionStep.tsx');
+    const { firstUnansweredQuestionStep } = await server.ssrLoadModule('/src/features/learn/answerRecord.ts');
+    const old = { value: '예전에 직접 쓴 풀이', submittedAt: 'old', correct: null, selfMark: 'ok' };
+    for (const key of ['concept_check', 'advanced_check']) {
+      const stage = unit.stages.find(s => s.key === key);
+      const records = Object.fromEntries(stage.questionIds.map(id => [id, old]));
+      assert.equal(firstUnansweredQuestionStep(unit, stage, records), 0);
+      for (const [i, id] of stage.questionIds.entries()) {
+        const html = renderToStaticMarkup(React.createElement(QuestionStep, {
+          question: unit.questions[id], number: i + 1, total: stage.questionIds.length,
+          record: old, answer: answers[id], onCheck() { assert.fail('render submitted an answer'); },
+          onSelfMark() { assert.fail('render changed an old answer'); }, bind() {},
+        }));
+        assert.equal((html.match(/type="radio"/g) || []).length, 5, id);
+        assert.match(html, /<table/, `${id}: authored data table renders`);
+        assert.doesNotMatch(html, /<textarea|disabled=""|self-mark-wrap|feedback-head/, `${id}: an old written response must allow a new choice`);
+        records[id] = { value: answers[id].choiceIndex, correct: true, submittedAt: 'new' };
+        assert.equal(firstUnansweredQuestionStep(unit, stage, records), i + 1 === stage.questionIds.length ? -1 : i + 1);
+      }
+    }
+    assert.equal(old.value, '예전에 직접 쓴 풀이', 'compatibility does not erase the old record');
+  } finally {
+    await server.close();
+  }
+});
+
+test('심화 활동의 관측 범위와 질량 자료가 같은 화면의 설명·질문과 일치한다', async () => {
+  const unit = JSON.parse(await fs.readFile('public/content/units/unit-1-1.json', 'utf8'));
+  const advanced = unit.stages.find(s => s.key === 'advanced');
+  const rangeStep = advanced.steps.find(s => s.activities?.some(a => a.id === 'u11-advanced-0'));
+  const range = rangeStep.activities.find(a => a.id === 'u11-advanced-0').props;
+  assert.deepEqual(range.sources.map(s => s.lines), [[425, 515], [515, 675]]);
+  assert.deepEqual(range.unknownLines, [515]);
+  for (const candidate of range.sources) {
+    assert.deepEqual(candidate.lines.filter(nm => nm >= range.min && nm <= range.max), range.unknownLines, 'both candidates give exactly the same observed lines in the selected window');
+  }
+  for (const value of [425, 515, 675, range.min, range.max]) assert.ok(rangeStep.md.includes(String(value)), `the reading must use the activity's wavelength ${value}`);
+  const massStep = advanced.steps.find(s => s.activities?.some(a => a.id === 'u11-advanced-1'));
+  const mass = massStep.activities.find(a => a.id === 'u11-advanced-1').props;
+  const totals = mass.samples.find(s => s.id === 'mass');
+  const counts = mass.samples.find(s => s.id === 'count');
+  assert.deepEqual(totals.parts.map(p => p.value), [18, 12]);
+  assert.deepEqual(counts.parts.map(p => p.value), [18, 3]);
+  assert.deepEqual(totals.parts.map((p, i) => p.value / [1, 4][i]), counts.parts.map(p => p.value), 'mass and count tabs represent the same mixture');
+  for (const sample of mass.samples) assert.equal(sample.parts.reduce((sum, p) => sum + p.value, 0), sample.total);
+  assert.match(mass.question.prompt, /수소 18, 헬륨 12/);
+  assert.match(massStep.md, /18:3 = 6:1/);
+  assert.equal(mass.question.options.find(o => o.id === mass.question.answer).text, '6:1');
+  for (const id of ['T1-02-01-A1', 'T1-02-01-S1']) {
+    assert.match(unit.questions[id].prompt, /400~700 nm/, `${id}: exclusion needs an explicit observed range`);
+  }
+  assert.doesNotMatch(JSON.stringify(unit), /연속광/, 'the first unit uses explained classroom terminology');
 });

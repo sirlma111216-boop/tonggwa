@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Answer, Question } from '../../content/types';
 import type { AnswerRecord } from '../../services/progress/types';
 import { Markdown } from './Markdown';
-
+import { currentAnswerRecord } from './answerRecord';
+import './QuestionStep.css';
 
 interface Props {
   question: Question;
@@ -17,10 +18,11 @@ interface Props {
 }
 
 /** 한 화면에 한 문항. 답을 고르고 ‘확인’을 누르면 바로 채점·해설이 열린다. */
-export function QuestionStep({ question, number, total, record, answer, onCheck, onSelfMark, bind }: Props) {
+export function QuestionStep({ question, number, total, record: savedRecord, answer, onCheck, onSelfMark, bind }: Props) {
   const [choice, setChoice] = useState<number | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const record = currentAnswerRecord(question, savedRecord);
   const checked = !!record;
 
   useEffect(() => {
@@ -58,6 +60,17 @@ export function QuestionStep({ question, number, total, record, answer, onCheck,
         <span className="muted small">{question.id}{question.label ? ` · ${question.label}` : ''}</span>
       </div>
       <Markdown md={question.prompt} />
+
+      {!!question.media?.length && (
+        <div className={`question-media${question.media.length > 1 ? ' question-media-paired' : ''}`} role="group" aria-label="문항의 관찰 자료">
+          {question.media.map((media) => (
+            <figure key={media.src} className="question-media-card">
+              <img src={media.src} alt={media.alt} decoding="async" />
+              <figcaption>{media.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
 
       {question.kind === 'choice' && question.choices ? (
         <ul className="choices choices-lg" role="radiogroup" aria-label="선택지">

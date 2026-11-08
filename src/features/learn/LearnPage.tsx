@@ -12,6 +12,7 @@ import { TermContext } from './TermContext';
 import { TermPanel } from './TermPanel';
 import { PilotLesson, PilotUnitPanel, TransferReview, pilotEvidence } from './PilotLesson';
 import { ConceptJourneyPlayer } from './journey/ConceptJourneyPlayer';
+import { currentAnswerRecord, firstUnansweredQuestionStep } from './answerRecord';
 
 const STAGE_DESC: Record<StageKey, string> = {
   prerequisite: '이 단원에 필요한 중학교 개념을 짧게 확인해요',
@@ -61,7 +62,13 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
   const state = useProgress();
   const up = state?.units[unit.id];
   const loc = findUnitInManifest(manifest, unit.id);
-  const status = (key: StageKey) => key === 'concept' && unit.conceptJourney && unitStageStatus(up, key) === 'done' && unit.conceptJourney.scenes.some(scene => !up?.activities?.[scene.id]?.correct) ? 'in_progress' : unitStageStatus(up, key);
+  const status = (key: StageKey) => {
+    const saved = unitStageStatus(up, key);
+    if (saved !== 'done') return saved;
+    if (key === 'concept' && unit.conceptJourney?.scenes.some(scene => !up?.activities?.[scene.id]?.correct)) return 'in_progress';
+    const stage = unit.stages.find(s => s.key === key)!;
+    return stage.kind === 'check' && firstUnansweredQuestionStep(unit, stage, up?.answers) >= 0 ? 'in_progress' : saved;
+  };
   const firstOpen = unit.stages.find((s) => status(s.key) !== 'done') ?? unit.stages[0];
   const doneCount = unit.stages.filter((s) => status(s.key) === 'done').length;
   return (
@@ -85,7 +92,7 @@ function UnitMap({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
         {unit.stages.map((s, i) => {
           const st = status(s.key);
           const qn = s.questionIds.length;
-          const correct = s.questionIds.filter((id) => up?.answers[id]?.correct === true).length;
+          const correct = s.questionIds.filter((id) => currentAnswerRecord(unit.questions[id], up?.answers[id])?.correct === true).length;
           const choiceN = s.questionIds.filter((id) => unit.questions[id].kind === 'choice').length;
           return (
             <li key={s.key} className={`path-node ${st}`}>
@@ -125,6 +132,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   const qApi = useRef<{ canCheck: boolean; check: () => void } | null>(null);
 
   const total = stage.steps.length; // 마지막에 요약 화면이 하나 더 붙는다
+  const firstUnanswered = firstUnansweredQuestionStep(unit, stage, up?.answers);
   const stageKeys = useMemo(() => unit.stages.map((s) => s.key), [unit]);
   const stageIdx = stageKeys.indexOf(stage.key);
   const nextStage = stageIdx + 1 < stageKeys.length ? stageKeys[stageIdx + 1] : null;
@@ -132,10 +140,14 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   // 시작 위치: ?s= 가 있으면 그것, 없으면 저장된 위치
   const initial = (() => {
     const q = params.get('s');
-    if (q !== null) return Math.min(Math.max(Number(q) || 0, 0), total);
+    const clamp = (step: number) => {
+      const index = Math.min(Math.max(Math.trunc(step) || 0, 0), total);
+      return index === total && stage.kind === 'check' && firstUnanswered >= 0 ? firstUnanswered : index;
+    };
+    if (q !== null) return clamp(Number(q));
     const saved = up?.stages[stage.key];
     if (saved?.status === 'done') return 0;
-    return Math.min(saved?.step ?? 0, total);
+    return clamp(saved?.step ?? 0);
   })();
   const [idx, setIdx] = useState(initial);
 
@@ -147,7 +159,7 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
 
   const step = idx < total ? stage.steps[idx] : null;
   const q = step?.type === 'question' ? unit.questions[step.id] : null;
-  const record = q ? up?.answers[q.id] : undefined;
+  const record = q ? currentAnswerRecord(q, up?.answers[q.id]) : undefined;
   const pendingActivity = !!(unit.pilot && step && step.type !== 'question' && step.activities?.some((a) => !up?.activities?.[a.id!]?.done));
   const evidence = unit.pilot ? pilotEvidence(unit, up) : null;
 
@@ -158,9 +170,10 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   const go = useCallback(
     (n: number) => {
       setAnim((a) => a + 1);
-      setIdx(Math.min(Math.max(n, 0), total));
+      const index = Math.min(Math.max(n, 0), total);
+      setIdx(index === total && stage.kind === 'check' && firstUnanswered >= 0 ? firstUnanswered : index);
     },
-    [total],
+    [total, stage.kind, firstUnanswered],
   );
 
   const checkAnswer = async (value: number | string) => {
@@ -179,12 +192,20 @@ function StagePlayer({ unit, stage, manifest }: { unit: Unit; stage: Stage; mani
   };
 
   const finishStage = () => {
+    if (stage.kind === 'check' && firstUnanswered >= 0) return;
     progress.setStageStatus(unit.id, stage.key, 'done', stageKeys);
   };
   useEffect(() => {
     if (idx === total) finishStage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, total]);
+
+  // A previous written response remains stored, but cannot complete a revised choice stage.
+  useEffect(() => {
+    if (stage.kind === 'check' && firstUnanswered >= 0 && up?.stages[stage.key]?.status === 'done') {
+      progress.setStageStatus(unit.id, stage.key, 'in_progress', stageKeys);
+    }
+  }, [firstUnanswered, stage.kind, stage.key, stageKeys, unit.id, up?.stages]);
 
   // 주 행동
   const needSelfMark = !!(q && record && record.correct === null && !record.selfMark);
@@ -308,10 +329,11 @@ function StageSummary({ unit, stage, nextStage, manifest }: { unit: Unit; stage:
   const up = state?.units[unit.id];
   const ids = stage.questionIds;
   const choice = ids.filter((id) => unit.questions[id].kind === 'choice');
-  const correct = choice.filter((id) => up?.answers[id]?.correct === true);
-  const wrong = choice.filter((id) => up?.answers[id]?.correct === false);
+  const recordFor = (id: string) => currentAnswerRecord(unit.questions[id], up?.answers[id]);
+  const correct = choice.filter((id) => recordFor(id)?.correct === true);
+  const wrong = choice.filter((id) => recordFor(id)?.correct === false);
   const shorts = ids.filter((id) => unit.questions[id].kind === 'short');
-  const review = shorts.filter((id) => up?.answers[id]?.selfMark && up.answers[id].selfMark !== 'ok');
+  const review = shorts.filter((id) => recordFor(id)?.selfMark && recordFor(id)?.selfMark !== 'ok');
   const nextLabel = nextStage ? manifest.stageOrder.find((s) => s.key === nextStage)?.label : null;
   return (
     <div className="summary">
@@ -331,7 +353,7 @@ function StageSummary({ unit, stage, nextStage, manifest }: { unit: Unit; stage:
             {shorts.length > 0 && (
               <div className="card">
                 <div className="muted small">서술형 · 맞게 썼어요</div>
-                <div className="summary-num">{shorts.filter((id) => up?.answers[id]?.selfMark === 'ok').length}<span>/{shorts.length}</span></div>
+                <div className="summary-num">{shorts.filter((id) => recordFor(id)?.selfMark === 'ok').length}<span>/{shorts.length}</span></div>
               </div>
             )}
           </div>
@@ -359,15 +381,16 @@ function UnitDone({ unit, manifest }: { unit: Unit; manifest: Manifest }) {
   const state = useProgress();
   const up = state?.units[unit.id];
   const keys = unit.stages.map((s) => s.key);
-  const done = keys.filter((k) => unitStageStatus(up, k) === 'done').length;
+  const done = unit.stages.filter(s => unitStageStatus(up, s.key) === 'done'
+    && (s.kind !== 'check' || firstUnansweredQuestionStep(unit, s, up?.answers) < 0)).length;
   const all = orderedUnits(manifest);
   const i = all.findIndex((u) => u.id === unit.id);
   const nextUnit = i >= 0 && i + 1 < all.length ? all[i + 1] : null;
   const qids = Object.keys(unit.questions);
   const choiceTotal = qids.filter((id) => unit.questions[id].kind === 'choice').length;
-  const choiceCorrect = qids.filter((id) => up?.answers[id]?.correct === true).length;
+  const choiceCorrect = qids.filter((id) => unit.questions[id].kind === 'choice' && currentAnswerRecord(unit.questions[id], up?.answers[id])?.correct === true).length;
   const shortTotal = qids.length - choiceTotal;
-  const shortOk = qids.filter((id) => up?.answers[id]?.selfMark === 'ok').length;
+  const shortOk = qids.filter((id) => unit.questions[id].kind === 'short' && currentAnswerRecord(unit.questions[id], up?.answers[id])?.selfMark === 'ok').length;
 
   return (
     <div className="page page-narrow">

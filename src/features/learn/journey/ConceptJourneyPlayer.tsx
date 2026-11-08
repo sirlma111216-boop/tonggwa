@@ -37,7 +37,7 @@ export function ConceptJourneyPlayer({ unit, journey }: { unit: Unit; journey: C
   const save = (next: SceneDraft) => progress.saveActivityDraft(unit.id, scene.id, next);
   const notebook = unit.notebooks?.find(n => n.id === scene.notebookId);
   const videoStep = unit.stages.flatMap(s => s.steps).find(s => s.type !== 'question' && s.lesson?.id === scene.videoLessonId);
-  const video = videoStep && videoStep.type !== 'question' ? videoStep.lesson?.video : undefined;
+  const video = scene.video ?? (videoStep && videoStep.type !== 'question' ? videoStep.lesson?.video : undefined);
 
   useEffect(() => {
     progress.setPosition({ unitId: unit.id, semester: unit.semester, stageKey: 'concept', step: index });

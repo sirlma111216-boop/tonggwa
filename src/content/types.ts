@@ -121,12 +121,20 @@ export interface Stage extends StageMeta {
   questionIds: string[];
 }
 
+export interface QuestionMedia {
+  src: string;
+  alt: string;
+  caption: string;
+}
+
 export interface Question {
   id: string;
   label?: string;
   kind: 'choice' | 'short';
   prompt: string;
   choices?: string[];
+  /** 문항의 관측 대상이나 입자 상태를 보여 주는 학습용 삽화. */
+  media?: QuestionMedia[];
 }
 
 export interface Unit {
@@ -171,6 +179,8 @@ export interface ConceptScene {
   takeaway: string;
   notebookId?: string;
   videoLessonId?: string;
+  /** 이 장면의 관찰 대상과 확인 질문에 맞춘 영상 제작 지침. */
+  video?: LessonVideo;
 }
 
 export interface ConceptJourney {

@@ -6,6 +6,9 @@ export function attachConceptJourney(unit, directory) {
   if (!fs.existsSync(file)) return;
   const journey = JSON.parse(fs.readFileSync(file, 'utf8'));
   const kinds = ['prism', 'wave', 'sources', 'axes', 'match', 'inference', 'atom', 'cooling', 'timeline', 'ratio', 'origins', 'transfer'];
+  const videoFile = path.join(directory, `${unit.id}-videos.json`);
+  const videos = fs.existsSync(videoFile) ? JSON.parse(fs.readFileSync(videoFile, 'utf8')) : null;
+  if (videos && (Object.keys(videos).length !== kinds.length || kinds.some(kind => !videos[kind]))) throw new Error(`${videoFile}: a video brief is required for each journey kind`);
   const ids = new Set();
   const lessonIds = unit.stages.flatMap(s => s.steps.map(step => step.lesson?.id));
   if (!journey.revision || journey.scenes?.length !== kinds.length) throw new Error(`${file}: invalid journey revision/scenes`);
@@ -19,7 +22,16 @@ export function attachConceptJourney(unit, directory) {
     if (!q?.prompt || !q.explanation || q.options.length < 2 || new Set(q.options.map(o => o.id)).size !== q.options.length || q.options.filter(o => o.id === q.answer).length !== 1 || q.options.some(o => !o.text || !o.feedback)) throw new Error(`${file}: invalid question ${scene.id}`);
     if (!scene.terms?.length || scene.terms.some(t => !t.term || !t.meaning)) throw new Error(`${file}: undefined terms ${scene.id}`);
     if (scene.notebookId && !unit.notebooks.some(n => n.id === scene.notebookId)) throw new Error(`${file}: missing notebook ${scene.notebookId}`);
-    if (scene.videoLessonId && !lessonIds.includes(scene.videoLessonId)) throw new Error(`${file}: missing video ${scene.videoLessonId}`);
+    if (videos) scene.video = videos[scene.kind];
+    if (scene.video) {
+      const video = scene.video;
+      const text = value => typeof value === 'string' && value.trim().length > 0;
+      const list = value => Array.isArray(value) && value.length > 0 && value.every(text);
+      if (!text(video.brief) || !text(video.title) || !text(video.duration) || !list(video.scenes) || !text(video.checkQuestion) || !list(video.avoid) || !Array.isArray(video.sources) || !video.sources.length) throw new Error(`${file}: incomplete scene video ${scene.id}`);
+      for (const source of video.sources) {
+        if (!/^https:\/\//.test(source.url) || !text(source.label) || !text(source.note) || !['article', 'video', 'interactive'].includes(source.kind)) throw new Error(`${file}: invalid scene video source ${scene.id}/${source.url}`);
+      }
+    } else if (scene.videoLessonId && !lessonIds.includes(scene.videoLessonId)) throw new Error(`${file}: missing video ${scene.videoLessonId}`);
   });
   unit.conceptJourney = journey;
   // Help links in other stages must land on the new concept scene, not the old page index.

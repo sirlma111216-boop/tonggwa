@@ -10,7 +10,7 @@ export interface LabProps {
 const spectralColor = (nm: number) => nm < 450 ? '#a58aff' : nm < 490 ? '#6cafff' : nm < 530 ? '#48ddd2' : nm < 575 ? '#bce659' : nm < 610 ? '#ffd56a' : '#ff776e';
 const validVisits = (value: unknown, allowed: string[], fallback: string[] = []) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && allowed.includes(item)) : fallback;
 
-function Spectrum({ label, mode = 'absorption', lines = [], min = 400, max = 700, guides = [], height = 154, faint = false }: {
+function Spectrum({ label, mode = 'absorption', lines = [], min = 400, max = 700, guides = [], height = 154, weakLines = [] }: {
   label: string;
   mode?: 'continuous' | 'emission' | 'absorption';
   lines?: number[];
@@ -18,7 +18,7 @@ function Spectrum({ label, mode = 'absorption', lines = [], min = 400, max = 700
   max?: number;
   guides?: number[];
   height?: number;
-  faint?: boolean;
+  weakLines?: number[];
 }) {
   const id = useId().replace(/:/g, '');
   const left = 42, width = 716;
@@ -30,7 +30,7 @@ function Spectrum({ label, mode = 'absorption', lines = [], min = 400, max = 700
     <text x={left + width} y="21" textAnchor="end" className="jl-svg-tick">파장 (nm)</text>
     <rect x={left} y="35" width={width} height="42" rx="5" fill={mode === 'emission' ? '#070e1b' : `url(#${id})`} />
     {lines.map(nm => <g key={nm}>
-      <line x1={x(nm)} x2={x(nm)} y1="36" y2="76" stroke={mode === 'emission' ? spectralColor(nm) : '#091122'} strokeWidth={mode === 'emission' ? (faint ? 3 : 6) : 5} opacity={faint ? .48 : 1} />
+      <line x1={x(nm)} x2={x(nm)} y1="36" y2="76" stroke={mode === 'emission' ? spectralColor(nm) : '#091122'} strokeWidth={mode === 'emission' ? 6 : 5} opacity={weakLines.includes(nm) ? .45 : 1} />
       <text x={x(nm)} y="100" textAnchor="middle" className="jl-svg-value">{nm}</text>
     </g>)}
     {guides.map(nm => <line key={nm} x1={x(nm)} x2={x(nm)} y1="28" y2="83" stroke="#fff" strokeWidth="2" strokeDasharray="4 4" />)}
@@ -85,10 +85,17 @@ function Wave({ state, onChange }: LabProps) {
 }
 
 const sourceOptions = [
-  { id: 'continuous', label: '연속광', detail: '뜨겁고 밀도가 높은 광원', spectrum: '연속 스펙트럼' },
-  { id: 'emission', label: '뜨거운 기체', detail: '뜨겁고 밀도가 낮은 기체', spectrum: '방출 선스펙트럼' },
-  { id: 'absorption', label: '연속광 + 차가운 기체', detail: '연속광이 상대적으로 차가운 기체를 통과', spectrum: '흡수 스펙트럼' },
+  { id: 'continuous', label: '백열 전구', detail: '뜨거운 필라멘트가 빛을 내요', spectrum: '연속 스펙트럼', flow: ['백열 전구', '분광기'], description: '전구 안의 가는 금속선인 필라멘트가 뜨거워져 빛을 내요. 이 빛을 분광기로 나누어 보아요.' },
+  { id: 'emission', label: '뜨거운 기체', detail: '기체에서 나온 빛을 관찰해요', spectrum: '방출 스펙트럼', flow: ['기체 방전관', '분광기'], description: '기체 방전관은 전기 에너지를 주어 희박한 기체가 빛을 내게 하는 장치예요. 이 빛을 분광기로 나누어 보아요.' },
+  { id: 'absorption', label: '전구 빛 + 기체', detail: '전구의 빛이 기체를 지나가요', spectrum: '흡수 스펙트럼', flow: ['백열 전구', '기체층', '분광기'], description: '백열 전구에서 나온 빛을 상대적으로 온도가 낮은 기체에 통과시킨 뒤, 분광기로 나누어 보아요.' },
 ] as const;
+
+function ApparatusImage({ name, alt, flow }: { name: string; alt: string; flow: readonly string[] }) {
+  return <figure className="jl-apparatus">
+    <img key={name} src={`/images/authored/spectra/${name}-v1.png`} width="2172" height="724" alt={alt} decoding="async" />
+    <figcaption>{flow.map((label, i) => <span key={label}>{i > 0 && <span className="jl-flow-arrow" aria-hidden="true">→</span>}{label}</span>)}</figcaption>
+  </figure>;
+}
 
 function Sources({ state, onChange }: LabProps) {
   const mode = sourceOptions.find(x => x.id === state.source)?.id ?? 'continuous';
@@ -99,16 +106,13 @@ function Sources({ state, onChange }: LabProps) {
     <div className="jl-switches" aria-label="빛이 만들어지는 조건">{sourceOptions.map(option => <button type="button" key={option.id} aria-pressed={mode === option.id} onClick={() => choose(option.id)}><span>{option.label}</span>{visited.includes(option.id) && <span className="jl-visited" aria-label="관찰함">✓</span>}</button>)}</div>
     <div className="jl-space jl-source-space">
       <span className="jl-diagram-tag">{current.detail}</span>
-      <svg className="jl-source-path" viewBox="0 0 800 115" role="img" aria-label={mode === 'absorption' ? '연속광이 상대적으로 차가운 기체를 통과한 뒤의 빛을 분광 장치로 관찰합니다.' : `${current.detail}에서 나온 빛을 분광 장치로 관찰합니다.`}>
-        <path d="M145 56H665" stroke={mode === 'emission' ? '#c7a1ff' : '#fff1c2'} strokeWidth="3" strokeDasharray={mode === 'emission' ? '10 8' : undefined} />
-        {mode === 'emission' ? <g><rect x="54" y="19" width="104" height="69" rx="18" fill="#522d70" stroke="#b888ea" />{[75, 105, 134].map((x, i) => <circle key={x} cx={x} cy={43 + i % 2 * 22} r="5" fill="#d3abff" />)}<text x="107" y="109" textAnchor="middle" className="jl-svg-label">뜨거운 기체</text></g> : <g><circle cx="105" cy="55" r="28" fill="#ffe0a3" /><circle cx="105" cy="55" r="37" fill="#ffe0a3" opacity=".1" /><text x="105" y="109" textAnchor="middle" className="jl-svg-label">연속광 광원</text></g>}
-        {mode === 'absorption' && <g><rect x="310" y="19" width="120" height="69" rx="13" fill="#244960" stroke="#80b7cc" />{[333, 367, 400].map((x, i) => <circle key={x} cx={x} cy={41 + i % 2 * 27} r="5" fill="#a7dbf0" />)}<text x="370" y="109" textAnchor="middle" className="jl-svg-label">차가운 기체</text></g>}
-        <rect x="650" y="28" width="100" height="54" rx="10" fill="#22374d" stroke="#8da7c2" /><path d="M673 66L687 42L701 66Z" fill="#bad9ea" opacity=".8" /><path d="M707 45H731M707 55H731M707 65H731" stroke="#8dcbd5" strokeWidth="3" /><text x="700" y="109" textAnchor="middle" className="jl-svg-label">분광 장치</text>
-      </svg>
+      <ApparatusImage name={mode} alt={current.description} flow={current.flow} />
+      <p className="jl-apparatus-description">{current.description}</p>
+      <div className="jl-result-label">분광기로 관찰한 결과 ↓</div>
       <Spectrum label={current.spectrum} mode={mode} lines={mode === 'continuous' ? [] : [430, 610]} />
     </div>
     <div className="jl-observation" role="status"><span className="jl-count">{visited.length} / 3 관찰</span><span>{mode === 'continuous' ? '사이사이 끊김 없이 빛이 이어지나요?' : mode === 'emission' ? '어두운 바탕에서 밝은 선이 있는 위치를 읽어 보세요.' : '밝은 바탕에서 어두운 선의 위치를 읽어 보세요.'}</span></div>
-    <p className="jl-model-note">같은 기체의 대표적인 두 선만 나타낸 학습 모형입니다. 선의 폭과 색은 구별하기 쉽게 표현했습니다.</p>
+    <p className="jl-model-note">장치와 빛의 경로는 이해를 돕기 위한 삽화예요. {mode === 'continuous' ? '아래는 백열 전구의 빛이 가시광선 범위에서 연속적으로 이어지는 모습을 나타낸 모형이에요.' : '방출·흡수 스펙트럼은 같은 기체의 대표적인 두 선을 비교한 학습용 자료이며, 선의 폭과 색은 구별하기 쉽게 표현했어요.'}</p>
   </div>;
 }
 
@@ -129,19 +133,42 @@ function Match({ state, onChange, kind }: LabProps) {
   const observation = transfer ? [440, 590] : [430, 610];
   const choose = (candidate: string) => { const compared = [...new Set([...visited, candidate])]; onChange({ ...state, candidate, compared, explored: compared.length === options.length }); };
   return <div className="jl-lab">
-    <div className="jl-switches" aria-label="비교할 기준 원소">{options.map(option => <button type="button" key={option.id} aria-pressed={selected.id === option.id} onClick={() => choose(option.id)}><span>원소 {option.id}</span>{visited.includes(option.id) && <span className="jl-visited" aria-label="비교함">✓</span>}</button>)}</div>
-    <div className="jl-space jl-stacked-spectra"><span className="jl-diagram-tag">같은 눈금에서 선의 위치 비교하기</span><Spectrum label="별빛에서 관찰한 흡수선" lines={observation} /><Spectrum label={`기준 자료 · 원소 ${selected.id}의 방출선`} mode="emission" lines={selected.lines} guides={observation} /><p className="jl-guide-key"><span aria-hidden="true">┆</span> 흰 점선은 위 자료의 흡수선 위치를 아래로 옮긴 표시예요.</p></div>
-    <div className="jl-observation" role="status"><span className="jl-count">{visited.length}개 비교</span><span>기준 원소를 바꾸며 두 선의 위치를 모두 확인하세요.</span></div>
-    <p className="jl-model-note">가상 원소의 파장 눈금과 원자 상태를 맞춘 비교입니다. 제시된 선은 모두 검출되며, 원소의 함량은 주어지지 않았어요.</p>
+    <section className="jl-space jl-measurement" aria-label="별에서 온 빛의 측정">
+      <div className="jl-measurement-heading"><span>01 · 별빛 관측</span><h3>별에서 온 빛을 측정했어요</h3><p>별의 뜨거운 안쪽에서 나온 빛이 상대적으로 차가운 바깥 기체층을 지나왔어요. 이 빛을 망원경으로 모아 분광기로 조사해요.</p></div>
+      <ApparatusImage name="star" alt="먼 별에서 온 빛을 망원경으로 모아 연결된 분광기로 관측하는 장면" flow={['별에서 온 빛', '망원경 · 분광기']} />
+      <div className="jl-result-label">이 별빛에서 측정한 결과 ↓</div>
+      <Spectrum label="흡수 스펙트럼" lines={observation} />
+    </section>
+    <div className="jl-measurement-bridge">이 선은 어떤 원소의 흔적일까요?<br /><strong>실험실에서 얻은 기체의 빛과 비교해요.</strong></div>
+    <section className="jl-space jl-measurement" aria-label="원소 기체에서 나온 빛의 측정">
+      <div className="jl-measurement-heading"><span>02 · 실험실 측정</span><h3>원소 한 종류로 된 기체에 에너지를 주면?</h3><p>{options.map(x => x.id).join('·')}는 비교 연습을 위해 이름 붙인 가상 원소예요. 방전관 속 기체의 종류를 바꾸며, 기체가 내는 빛을 분광기로 조사해요.</p></div>
+      <div className="jl-switches jl-gas-switches" aria-label="방전관에 넣어 비교할 원소 기체">{options.map(option => <button type="button" key={option.id} aria-pressed={selected.id === option.id} onClick={() => choose(option.id)}><span>원소 {option.id} 기체</span>{visited.includes(option.id) && <span className="jl-visited" aria-label="비교함">✓</span>}</button>)}</div>
+      <ApparatusImage name="emission" alt={`실험실에서 원소 ${selected.id} 기체가 든 방전관에 에너지를 주고, 나온 빛을 분광기로 측정하는 장면`} flow={[`원소 ${selected.id} 기체 방전관`, '분광기']} />
+      <div className="jl-result-label">원소 {selected.id} 기체의 빛에서 측정한 결과 ↓</div>
+      <Spectrum label="방출 스펙트럼" mode="emission" lines={selected.lines} guides={observation} />
+      <p className="jl-guide-key"><span aria-hidden="true">┆</span> 흰 점선은 별빛의 흡수선 위치를 같은 눈금에 옮긴 표시예요.</p>
+    </section>
+    <div className="jl-observation" role="status"><span className="jl-count">{visited.length}개 비교</span><span>기체를 바꾸며, 별빛의 어두운 선과 기체의 밝은 선이 같은 파장에 있는지 확인하세요.</span></div>
+    <p className="jl-model-note">장치·기체의 색·별의 크기와 거리는 실제를 그대로 재현한 것이 아닌 학습용 삽화예요. 위아래 파장 눈금은 같고, 제시된 선은 모두 검출된다고 가정해요. 원소의 함량은 주어지지 않았어요.</p>
   </div>;
 }
 
 function Inference({ state, onChange }: LabProps) {
-  const revealed = state.comparisonRevealed === true;
+  const revealed = state.detectorCompared === true;
   return <div className="jl-lab">
-    <div className="jl-space jl-stacked-spectra"><span className="jl-diagram-tag">같은 원소, 다른 관측 조건</span><Spectrum label="관측 ① · 조건 가" mode="emission" lines={[430, 550, 610]} />{revealed ? <div className="jl-reveal"><Spectrum label="관측 ② · 조건 나" mode="emission" lines={[430, 610]} faint /><p className="jl-guide-key">관측 ②에서는 550 nm의 약한 선을 구별하지 못했어요.</p></div> : <div className="jl-comparison-placeholder"><span aria-hidden="true">⋯</span><span>다른 조건에서 같은 원소를 관측하면?</span></div>}</div>
-    <div className="jl-control-row"><button type="button" className="jl-action" disabled={revealed} onClick={() => onChange({ ...state, comparisonRevealed: true, explored: true })}>{revealed ? '두 조건을 나란히 관찰 중' : '다른 관측 조건의 자료 열기'}<span aria-hidden="true"> ⤓</span></button><span className="jl-control-hint" role="status">{revealed ? '보이는 선의 수와 밝기가 달라졌어요. 무엇까지 결론 낼 수 있을까요?' : '아래 자료를 열어 선의 수와 밝기를 비교하세요.'}</span></div>
-    <p className="jl-model-note">측정 조건에 따라 보이는 선이 달라질 수 있음을 보여 주는 모형입니다. 이 자료에는 원소의 양이 주어져 있지 않습니다.</p>
+    <div className="jl-space jl-stacked-spectra">
+      <span className="jl-diagram-tag">같은 기체 · 같은 양과 온도 · 같은 빛</span>
+      <p className="jl-apparatus-description">① 약한 빛까지 구별하는 장치로 측정해요.</p>
+      <Spectrum label="관측 ①" mode="emission" lines={[430, 550, 610]} weakLines={[550]} />
+      <p className="jl-guide-key">550 nm의 빛은 다른 두 선보다 약해요.</p>
+      {revealed ? <div className="jl-reveal">
+        <p className="jl-apparatus-description">② 같은 빛을, 약한 빛을 구별하기 어려운 장치로 측정해요.</p>
+        <Spectrum label="관측 ②" mode="emission" lines={[430, 610]} />
+        <p className="jl-guide-key">430·610 nm는 같은 위치에 있어요. 550 nm의 약한 선은 검출되지 않았어요.</p>
+      </div> : <div className="jl-comparison-placeholder"><span aria-hidden="true">⋯</span><span>장치의 감도가 낮아지면 어떤 선이 보일까요?</span></div>}
+    </div>
+    <div className="jl-control-row"><button type="button" className="jl-action" disabled={revealed} onClick={() => onChange({ ...state, detectorCompared: true, explored: true })}>{revealed ? '두 장치의 측정 결과를 비교 중' : '감도가 낮은 장치로 측정하기'}<span aria-hidden="true"> ⤓</span></button><span className="jl-control-hint" role="status">{revealed ? '없어진 것처럼 보이는 선은 어느 파장인가요? 바뀐 것은 기체일까요, 장치일까요?' : '기체는 그대로 두고, 측정 장치만 바꾸어 보세요.'}</span></div>
+    <p className="jl-model-note">약한 선의 검출 여부를 비교한 학습 모형이에요. 선의 굵기는 모두 같으며, 밝기는 약한 선을 구별하기 위한 표시예요. 실제 밝기의 측정값이나 원소의 양을 나타내지는 않아요.</p>
   </div>;
 }
 

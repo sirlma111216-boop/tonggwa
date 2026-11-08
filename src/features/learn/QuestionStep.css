@@ -1,0 +1,10 @@
+.question-media { display: grid; gap: 16px; margin: 22px 0 26px; }
+.question-media-paired { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.question-media-card { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface, #fff); }
+.question-media-card img { display: block; width: 100%; height: auto; object-fit: contain; }
+.question-media-card figcaption { padding: 12px 15px; font-size: 14px; line-height: 1.65; color: var(--muted); word-break: keep-all; }
+@media (max-width: 650px) {
+  .question-media { gap: 12px; margin: 18px 0 22px; }
+  .question-media-paired { grid-template-columns: minmax(0, 1fr); }
+  .question-media-card figcaption { padding: 10px 12px; font-size: 13px; }
+}
