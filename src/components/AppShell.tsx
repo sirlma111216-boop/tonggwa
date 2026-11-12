@@ -28,6 +28,7 @@ export function AppShell() {
         </Link>
         <nav className="nav" aria-label="주요 메뉴">
           <NavLink to="/" end>시작</NavLink>
+          <NavLink to="/march">3월 모의고사 대비</NavLink>
           <NavLink to="/start/semester">학습 지도</NavLink>
           <NavLink to="/exams">평가원 예시</NavLink>
           <NavLink to="/record">내 학습 기록</NavLink>

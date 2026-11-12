@@ -419,7 +419,7 @@ test('평가 삽화는 필요한 문항에만 연결되며 선택지 앞에 보�
       const question = unit.questions[id];
       assert.deepEqual(question.media, media, `${id}: authored and served media differ`);
       for (const image of media) {
-        assert.deepEqual(Object.keys(image).sort(), ['alt', 'caption', 'src'], 'Assessment illustrations must not carry answer fields');
+        assert.deepEqual(Object.keys(image).sort(), (image.panels ? ['alt', 'caption', 'panels', 'src'] : ['alt', 'caption', 'src']), 'Assessment illustrations must not carry answer fields');
         assert.match(image.src, /^\/images\/.*\.(?:png|jpe?g|webp|avif)$/i);
         assert.ok((await fs.stat(new URL(`../public${image.src}`, import.meta.url))).isFile(), image.src);
       }

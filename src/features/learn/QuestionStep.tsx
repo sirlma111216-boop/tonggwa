@@ -51,6 +51,8 @@ export function QuestionStep({ question, number, total, record: savedRecord, ans
     return () => window.removeEventListener('keydown', h);
   }, [checked, question]);
 
+  const blocks = question.prompt.split(/\r?\n\r?\n/);
+  const finalQuestion = question.media?.length && blocks.length > 1 ? blocks.pop() : undefined;
   const chosen = checked ? (record.value as number) : choice;
 
   return (
@@ -59,19 +61,21 @@ export function QuestionStep({ question, number, total, record: savedRecord, ans
         <span className="badge">문항 {number} / {total}</span>
         <span className="muted small">{question.id}{question.label ? ` · ${question.label}` : ''}</span>
       </div>
-      <Markdown md={question.prompt} />
+      <Markdown md={blocks.join('\n\n')} />
 
       {!!question.media?.length && (
         <div className={`question-media${question.media.length > 1 ? ' question-media-paired' : ''}`} role="group" aria-label="문항의 관찰 자료">
           {question.media.map((media) => (
             <figure key={media.src} className="question-media-card">
               <img src={media.src} alt={media.alt} decoding="async" />
+              {media.panels && <div className="question-panel-captions">{media.panels.map(panel => <div key={panel.label}><strong>{panel.label}</strong><span>{panel.description}</span></div>)}</div>}
               <figcaption>{media.caption}</figcaption>
             </figure>
           ))}
         </div>
       )}
 
+      {finalQuestion && <Markdown md={finalQuestion} />}
       {question.kind === 'choice' && question.choices ? (
         <ul className="choices choices-lg" role="radiogroup" aria-label="선택지">
           {question.choices.map((c, i) => {

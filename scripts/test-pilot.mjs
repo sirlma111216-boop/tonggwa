@@ -148,8 +148,21 @@ test('첫 단원 평가는 9개 모두 5지선다이며 개념·심화의 옛 �
     assert.equal(answers[id].choiceIndex, index, id);
     assert.doesNotMatch(q.prompt, /서술하시오|근거를 쓰시오|배열하시오|구하시오/, id);
   }
-  for (const suffix of ['C1', 'C2', 'C3', 'A1', 'A2']) {
+  // 심화평가는 자료표를 본문에 유지한다.
+  for (const suffix of ['A1', 'A2']) {
     assert.match(unit.questions[`T1-02-01-${suffix}`].prompt, /\|---/, `${suffix}: observation and conditions must remain a readable data table`);
+  }
+  // 개념평가 C1~C3은 시험지 형식('그림은 …이다')으로 바꾸면서 자료표를 그림 설명으로 옮겼다.
+  // 표가 사라진 만큼, 풀이에 필요한 조건이 그림 설명(캡션·패널)에 글자로 남아 있어야 한다.
+  const mediaText = (suffix) => (unit.questions[`T1-02-01-${suffix}`].media ?? [])
+    .map(m => [m.caption, ...(m.panels ?? []).map(p => `${p.label} ${p.description}`)].join(' ')).join(' ');
+  for (const [suffix, required] of Object.entries({
+    C1: [/470 nm/, /620 nm/, /어두운 선/, /연속/],
+    C2: [/A 원자핵과 전자가 결합하여 중성 원자 형성/, /B 양성자·중성자 형성/, /C 초기 헬륨 원자핵 형성/],
+    C3: [/440 nm/, /590 nm/, /방출선/, /흡수선/, /X 기체/],
+  })) {
+    assert.match(unit.questions[`T1-02-01-${suffix}`].prompt, /^그림/, `${suffix}: figure-led exam wording`);
+    for (const pattern of required) assert.match(mediaText(suffix), pattern, `${suffix}: the figure description must carry the condition ${pattern}`);
   }
   const server = await createServer({ server: { middlewareMode: true, watch: null }, cacheDir: 'node_modules/.vite-unit-assessment-check', logLevel: 'error' });
   try {
@@ -167,7 +180,13 @@ test('첫 단원 평가는 9개 모두 5지선다이며 개념·심화의 옛 �
           onSelfMark() { assert.fail('render changed an old answer'); }, bind() {},
         }));
         assert.equal((html.match(/type="radio"/g) || []).length, 5, id);
-        assert.match(html, /<table/, `${id}: authored data table renders`);
+        // 심화평가는 자료표, 개념평가는 그림과 그 설명이 선택지보다 먼저 렌더되어야 한다.
+        if (key === 'advanced_check') assert.match(html, /<table/, `${id}: authored data table renders`);
+        else {
+          assert.match(html, /<figure class="question-media-card">[\s\S]*<figcaption>/, `${id}: figure and its description render`);
+          assert.ok(html.indexOf('<figcaption>') < html.indexOf('role="radiogroup"'), `${id}: figure description comes before the choices`);
+          assert.ok(html.lastIndexOf('?</p>') > html.indexOf('</figure>') && html.lastIndexOf('?</p>') < html.indexOf('role="radiogroup"'), `${id}: the question sentence sits between the figure and the choices`);
+        }
         assert.doesNotMatch(html, /<textarea|disabled=""|self-mark-wrap|feedback-head/, `${id}: an old written response must allow a new choice`);
         records[id] = { value: answers[id].choiceIndex, correct: true, submittedAt: 'new' };
         assert.equal(firstUnansweredQuestionStep(unit, stage, records), i + 1 === stage.questionIds.length ? -1 : i + 1);

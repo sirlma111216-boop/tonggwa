@@ -1,6 +1,9 @@
 node_modules/
 dist/
 public/content/
+public/march/
+tmp/
+output/
 .env
 .env.*
 !.env.example

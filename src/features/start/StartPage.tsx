@@ -57,6 +57,12 @@ export function StartPage() {
         </div>
       </div>
 
+      <section className="card" style={{ marginTop: 20 }}>
+        <h2>3월 모의고사 대비</h2>
+        <p>중학 과학 기출 57문항 · 5문제씩 풀고 채점하면서 필요한 개념을 복습해요.</p>
+        <Link className="btn btn-primary" to="/march">문제부터 시작하기 →</Link>
+      </section>
+
       <div className="pilot-launch" aria-label="새로운 탐구 수업">
         <Link to="/learn/unit-1-1"><small>탐구 수업 01 · 원소와 우주</small><strong>빛에 남은 우주의 단서 ↗</strong><span>스펙트럼을 겹쳐 보고, 초기 우주의 사건을 연결해요.</span></Link>
         <Link to="/learn/unit-1-2"><small>탐구 수업 02 · 별과 생명</small><strong>별에서 내 몸까지 ↗</strong><span>원소의 여행을 따라가고, 서로 다른 성분비를 읽어요.</span></Link>

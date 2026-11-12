@@ -5,7 +5,7 @@
   "type": "module",
   "description": "고등학교 1학년 통합과학 학생용 학습 웹앱 (V1)",
   "scripts": {
-    "content": "node scripts/build-content.mjs",
+    "content": "node scripts/build-content.mjs && node scripts/build-march-bank.mjs",
     "predev": "npm run content",
     "dev": "vite",
     "prebuild": "npm run content",
@@ -14,6 +14,7 @@
     "typecheck": "tsc -b",
     "test:pilot": "npm run content && node scripts/check-pilot-content.mjs && node --test scripts/test-pilot.mjs",
     "test:concept": "npm run content && node --test scripts/test-concept-journey.mjs",
+    "test:march": "node scripts/build-march-bank.mjs && node --experimental-strip-types --test scripts/test-march.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf:dev": "wrangler dev"
   },

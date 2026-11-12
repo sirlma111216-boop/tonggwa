@@ -122,6 +122,7 @@ export interface Stage extends StageMeta {
 }
 
 export interface QuestionMedia {
+  panels?: { label: string; description: string }[];
   src: string;
   alt: string;
   caption: string;

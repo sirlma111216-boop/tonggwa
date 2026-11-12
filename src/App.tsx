@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { LoginPage } from './features/account/LoginPage';
 import { ExamPage, ExamsPage } from './features/exams/ExamsPage';
+import { MarchPage } from './features/march/MarchPage';
 import { LearnPage } from './features/learn/LearnPage';
 import { WorkbookPage } from './features/learn/WorkbookPage';
 import { RecordPage } from './features/record/RecordPage';
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/workbook/:unitId" element={<WorkbookPage />} />
           <Route path="/learn/:unitId/:stageKey" element={<LearnPage />} />
           <Route path="/exams" element={<ExamsPage />} />
+          <Route path="/march" element={<MarchPage />} />
           <Route path="/exams/:kiceId" element={<ExamPage />} />
           <Route path="/record" element={<RecordPage />} />
         </Route>

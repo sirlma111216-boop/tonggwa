@@ -16,10 +16,9 @@ const shot = async (name, full = false) => {
   console.log('shot', name);
 };
 await page.goto(`${base}/login`);
-await page.fill('#email', 'sirlma111216@gmai.com');
-await page.fill('#pw', '966Kh4148!');
-await page.click('button:has-text("로그인")');
-await page.waitForURL(`${base}/`);
+// 비밀번호를 스크립트에 적지 않는다. 검토용 세션을 브라우저 저장소에 직접 넣어 로그인 상태를 만든다.
+await page.evaluate(() => localStorage.setItem('tonggwa.session.v1', JSON.stringify({ uid: 'screenshot-check', displayName: '화면 검증', email: 'qa@example.invalid', provider: 'local' })));
+await page.goto(`${base}/`);
 
 const cards = [
   ['unit-0-1', 'concept', 0, 'c1-sorter-ladder'],
